@@ -31,6 +31,7 @@
 #include "ns3/boolean.h"
 #include "ns3/string.h"
 #include "ns3/ethernet-header.h"
+#include "ns3/simulator.h"
 
 namespace ns3 {
 
@@ -260,6 +261,13 @@ void CosimNetDevice::AdapterRx (Ptr<Packet> packet)
 {
   NS_LOG_FUNCTION_NOARGS ();
 
+  uint32_t nid = m_node->GetId ();
+  Simulator::ScheduleWithContext (nid, Seconds (0.0),
+      MakeEvent (&CosimNetDevice::RxInContext, this, packet));
+}
+
+void CosimNetDevice::RxInContext (Ptr<Packet> packet)
+{
   PacketType packetType;
   Mac48Address destination;
   Mac48Address source;

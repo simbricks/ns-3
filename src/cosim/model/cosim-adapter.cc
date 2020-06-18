@@ -64,7 +64,7 @@ void CosimAdapter::Start ()
           "CosimAdapter::Connect: request for sync failed");
 
   if (m_sync)
-    m_syncTxEvent = Simulator::Schedule (m_syncDelay, &CosimAdapter::SendSyncEvent, this);
+    m_syncTxEvent = Simulator::ScheduleNow (&CosimAdapter::SendSyncEvent, this);
 
   m_pollEvent = Simulator::ScheduleNow (&CosimAdapter::PollEvent, this);
 }

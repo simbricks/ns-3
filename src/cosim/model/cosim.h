@@ -100,7 +100,8 @@ private:
   NetDevice::ReceiveCallback m_rxCallback;
   NetDevice::PromiscReceiveCallback m_promiscRxCallback;
 
-  void AdapterRx (Ptr<Packet> cb);
+  void AdapterRx (Ptr<Packet> packet);
+  void RxInContext (Ptr<Packet> packet);
 };
 
 
