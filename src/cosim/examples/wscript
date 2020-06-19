@@ -4,3 +4,6 @@ def build(bld):
     obj = bld.create_ns3_program('cosim-example', ['cosim'])
     obj.source = 'cosim-example.cc'
 
+    obj = bld.create_ns3_program('cosim-bridge-example', ['cosim', 'bridge'])
+    obj.source = 'cosim-bridge.cc'
+
