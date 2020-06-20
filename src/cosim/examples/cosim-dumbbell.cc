@@ -26,8 +26,8 @@
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/ipv4-list-routing-helper.h"
 #include "ns3/bridge-net-device.h"
-#include "ns3/point-to-point-channel.h"
-#include "ns3/point-to-point-net-device.h"
+#include "ns3/simple-channel.h"
+#include "ns3/simple-net-device.h"
 #include "ns3/cosim.h"
 
 using namespace ns3;
@@ -65,7 +65,8 @@ main (int argc, char *argv[])
       MakeCallback (&AddCosimRightPort));
   cmd.Parse (argc, argv);
 
-  //LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
+  /*LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
+  LogComponentEnable("BridgeNetDevice", LOG_LEVEL_ALL);*/
 
   GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
 
@@ -81,20 +82,24 @@ main (int argc, char *argv[])
   nodeLeft->AddDevice (bridgeLeft);
   nodeRight->AddDevice (bridgeRight);
 
-  NS_LOG_INFO ("Create point to point link between the two");
-  Ptr<PointToPointChannel> ptpChan = CreateObject<PointToPointChannel> ();
+  NS_LOG_INFO ("Create simple channel link between the two");
+  Ptr<SimpleChannel> ptpChan = CreateObject<SimpleChannel> ();
   ptpChan->SetAttribute ("Delay", TimeValue (linkLatency));
 
-  Ptr<PointToPointNetDevice> ptpDevLeft = CreateObject<PointToPointNetDevice> ();
-  Ptr<PointToPointNetDevice> ptpDevRight = CreateObject<PointToPointNetDevice> ();
+  Ptr<SimpleNetDevice> ptpDevLeft = CreateObject<SimpleNetDevice> ();
+  Ptr<SimpleNetDevice> ptpDevRight = CreateObject<SimpleNetDevice> ();
   ptpDevLeft->SetAttribute ("DataRate", DataRateValue(linkRate));
   ptpDevRight->SetAttribute ("DataRate", DataRateValue(linkRate));
-  ptpChan->Attach (ptpDevLeft);
-  ptpChan->Attach (ptpDevRight);
+  ptpDevLeft->SetAddress (Mac48Address::Allocate ());
+  ptpDevRight->SetAddress (Mac48Address::Allocate ());
+  ptpChan->Add (ptpDevLeft);
+  ptpChan->Add (ptpDevRight);
+  ptpDevLeft->SetChannel (ptpChan);
+  ptpDevRight->SetChannel (ptpChan);
   nodeLeft->AddDevice (ptpDevLeft);
   nodeRight->AddDevice (ptpDevRight);
   bridgeLeft->AddBridgePort (ptpDevLeft);
-  bridgeLeft->AddBridgePort (ptpDevRight);
+  bridgeRight->AddBridgePort (ptpDevRight);
 
 
   NS_LOG_INFO ("Create CosimDevices and add them to bridge");

@@ -11,3 +11,4 @@ cd $DIR
 
 ./waf --run "src/cosim/examples/$*"
 #./waf --run "src/cosim/examples/cosim-bridge-example" --command-template="gdb --args %s --CosimPort=/local/endhostsim/ehsim/experiments/out/qemu-ns3-bridge-pair/eth.a --CosimPort=/local/endhostsim/ehsim/experiments/out/qemu-ns3-bridge-pair/eth.b"
+#./waf --run "src/cosim/examples/cosim-dumbbell-example" --command-template="gdb --args %s --CosimPortLeft=/local/endhostsim/ehsim/experiments/out/qemu-ns3-dumbbell-pair/eth.a --CosimPortRight=/local/endhostsim/ehsim/experiments/out/qemu-ns3-dumbbell-pair/eth.b"

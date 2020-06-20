@@ -7,6 +7,6 @@ def build(bld):
     obj = bld.create_ns3_program('cosim-bridge-example', ['cosim', 'bridge'])
     obj.source = 'cosim-bridge.cc'
 
-    obj = bld.create_ns3_program('cosim-dumbbell-example', ['cosim', 'bridge', 'point-to-point'])
+    obj = bld.create_ns3_program('cosim-dumbbell-example', ['cosim', 'bridge'])
     obj.source = 'cosim-dumbbell.cc'
 
