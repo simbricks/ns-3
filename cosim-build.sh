@@ -9,4 +9,3 @@ if [ "$1" = "configure" ] ; then
   ./waf configure --enable-examples
 fi
 ./waf build --enable-examples
-./waf --run src/cosim/examples/cosim-example
