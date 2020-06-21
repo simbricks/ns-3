@@ -208,4 +208,34 @@ SequencerNetDevice::SupportsSendFrom (void) const
   return true;
 }
 
+void
+SequencerNetDevice::AddSwitchPort (Ptr<NetDevice> switchPort)
+{
+  NS_LOG_FUNCTION_NOARGS ();
+  NS_ASSERT (switchPort != this);
+  if (!Mac48Address::IsMatchingType (switchPort->GetAddress ())) {
+    NS_FATAL_ERROR ("Device does not support eui 48 addresses: cannot be added to switch.");
+  }
+  if (!switchPort->SupportsSendFrom ()) {
+    NS_FATAL_ERROR ("Device does not support SendFrom: cannot be added to switch.");
+  }
+  if (m_address == Mac48Address ()) {
+    m_address = Mac48Address::ConvertFrom (switchPort->GetAddress ());
+  }
+  m_node->RegisterProtocolHandler (MakeCallback (&SequencerNetDevice::ReceiveFromDevice,
+                                                 this),
+                                   0, switchPort, true);
+  m_ports.push_back (switchPort);
+}
+
+void
+SequencerNetDevice::ReceiveFromDevice (Ptr<NetDevice> device,
+                                       Ptr<const Packet> packet,
+                                       uint16_t protocol,
+                                       Address const &source,
+                                       Address const &destination,
+                                       PacketType packetType)
+{
+}
+
 } // namespace ns3
