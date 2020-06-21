@@ -12,12 +12,14 @@
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("SequencerNetDevice");
+NS_OBJECT_ENSURE_REGISTERED (SequencerNetDevice);
 
 /**
  * \brief Get the type ID.
  * \return the object TypeId
  */
-TypeId SequencerNetDevice::GetTypeId (void)
+TypeId
+SequencerNetDevice::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::SequencerNetDevice")
     .SetParent<NetDevice> ()
@@ -162,6 +164,24 @@ SequencerNetDevice::SendFrom (Ptr<Packet> packet, const Address& src,
                               const Address& dest, uint16_t protocolNumber)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  Mac48Address dst = Mac48Address::ConvertFrom (dest);
+
+  if (!dst.IsGroup ()) {
+    // Unicast
+    Ptr<NetDevice> outPort = GetLearnedState (dst);
+    if (outPort != nullptr) {
+      outPort->SendFrom (packet, src, dest, protocolNumber);
+      return true;
+    }
+  }
+
+  // Flood
+  Ptr<Packet> pktCopy;
+  for (auto iter = m_ports.begin (); iter != m_ports.end (); iter++) {
+    pktCopy = packet->Copy ();
+    Ptr<NetDevice> port = *iter;
+    port->SendFrom (pktCopy, src, dest, protocolNumber);
+  }
 
   return true;
 }
@@ -229,13 +249,101 @@ SequencerNetDevice::AddSwitchPort (Ptr<NetDevice> switchPort)
 }
 
 void
-SequencerNetDevice::ReceiveFromDevice (Ptr<NetDevice> device,
+SequencerNetDevice::ReceiveFromDevice (Ptr<NetDevice> inPort,
                                        Ptr<const Packet> packet,
                                        uint16_t protocol,
-                                       Address const &source,
-                                       Address const &destination,
+                                       Address const &src,
+                                       Address const &dst,
                                        PacketType packetType)
 {
+  NS_LOG_FUNCTION_NOARGS ();
+
+  Mac48Address srcMac = Mac48Address::ConvertFrom (src);
+  Mac48Address dstMac = Mac48Address::ConvertFrom (dst);
+
+  if (!m_promiscRxCallback.IsNull ()) {
+    m_promiscRxCallback (this, packet, protocol, src, dst, packetType);
+  }
+
+  switch (packetType) {
+  case PACKET_HOST:
+    if (dstMac == m_address) {
+      Learn (srcMac, inPort);
+      m_rxCallback (this, packet, protocol, src);
+    }
+    break;
+  case PACKET_BROADCAST:
+  case PACKET_MULTICAST:
+    m_rxCallback (this, packet, protocol, src);
+    ForwardBroadcast (inPort, packet, protocol, srcMac, dstMac);
+    break;
+  case PACKET_OTHERHOST:
+    if (dstMac == m_address) {
+      Learn (srcMac, inPort);
+      m_rxCallback (this, packet, protocol, src);
+    } else {
+      ForwardUnicast (inPort, packet, protocol, srcMac, dstMac);
+    }
+    break;
+  }
+}
+
+void
+SequencerNetDevice::Learn (Mac48Address source, Ptr<NetDevice> inPort)
+{
+  NS_LOG_FUNCTION_NOARGS ();
+  m_learnState[source] = inPort;
+}
+
+Ptr<NetDevice>
+SequencerNetDevice::GetLearnedState (Mac48Address source)
+{
+  if (m_learnState.count (source) > 0) {
+    return m_learnState.at (source);
+  } else {
+    return nullptr;
+  }
+}
+
+void
+SequencerNetDevice::ForwardBroadcast (Ptr<NetDevice> inPort,
+                                      Ptr<const Packet> packet,
+                                      uint16_t protocol,
+                                      Mac48Address src,
+                                      Mac48Address dst)
+{
+  NS_LOG_FUNCTION_NOARGS ();
+  Learn (src, inPort);
+
+  for (auto iter = m_ports.begin (); iter != m_ports.end (); iter++) {
+    Ptr<NetDevice> port = *iter;
+    if (port != inPort) {
+      port->SendFrom (packet->Copy (), src, dst, protocol);
+    }
+  }
+}
+
+void
+SequencerNetDevice::ForwardUnicast (Ptr<NetDevice> inPort,
+                                    Ptr<const Packet> packet,
+                                    uint16_t protocol,
+                                    Mac48Address src,
+                                    Mac48Address dst)
+{
+  NS_LOG_FUNCTION_NOARGS ();
+
+  Learn (src, inPort);
+  Ptr<NetDevice> outPort = GetLearnedState (dst);
+  if (outPort != nullptr && outPort != inPort) {
+      outPort->SendFrom (packet->Copy (), src, dst, protocol);
+  } else {
+    for (auto iter = m_ports.begin (); iter != m_ports.end (); iter++) {
+      Ptr<NetDevice> port = *iter;
+      if (port != inPort) {
+        port->SendFrom (packet->Copy (), src, dst, protocol);
+      }
+    }
+  }
 }
 
 } // namespace ns3

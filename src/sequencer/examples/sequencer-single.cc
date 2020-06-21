@@ -5,8 +5,8 @@
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/applications-module.h"
-#include "ns3/bridge-module.h"
 #include "ns3/internet-module.h"
+#include "ns3/sequencer-helper.h"
 
 using namespace ns3;
 
@@ -45,9 +45,9 @@ main(int argc, char *argv[])
     switchDevices.Add(link.Get(1));
   }
 
-  NS_LOG_INFO("Create Bridge");
-  BridgeHelper bridge;
-  bridge.Install(switchNode.Get(0), switchDevices);
+  NS_LOG_INFO("Create Switch");
+  SequencerHelper sequencer;
+  sequencer.Install(switchNode.Get(0), switchDevices);
 
   NS_LOG_INFO("Install Stack and Assign Addresses");
   InternetStackHelper internet;

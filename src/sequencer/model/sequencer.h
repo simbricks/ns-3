@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <map>
 #include "ns3/net-device.h"
 
 namespace ns3 {
@@ -53,12 +54,18 @@ public:
   void AddSwitchPort (Ptr<NetDevice> switchPort);
 
 private:
-  void ReceiveFromDevice (Ptr<NetDevice> device,
+  void ReceiveFromDevice (Ptr<NetDevice> port,
                           Ptr<const Packet> packet,
                           uint16_t protocol,
-                          Address const &source,
-                          Address const &destination,
+                          Address const &src,
+                          Address const &dst,
                           PacketType packetType);
+  void Learn (Mac48Address source, Ptr<NetDevice> port);
+  Ptr<NetDevice> GetLearnedState (Mac48Address source);
+  void ForwardBroadcast (Ptr<NetDevice> port, Ptr<const Packet> packet,
+                         uint16_t protocol, Mac48Address src, Mac48Address dst);
+  void ForwardUnicast (Ptr<NetDevice> port, Ptr<const Packet> packet,
+                       uint16_t protocol, Mac48Address src, Mac48Address dst);
 
   uint16_t m_mtu;
   uint32_t m_ifIndex;
@@ -67,6 +74,8 @@ private:
   std::vector< Ptr<NetDevice> > m_ports;
   NetDevice::ReceiveCallback m_rxCallback;
   NetDevice::PromiscReceiveCallback m_promiscRxCallback;
+
+  std::map<Mac48Address, Ptr<NetDevice> > m_learnState;
 };
 
 } // namespace ns3

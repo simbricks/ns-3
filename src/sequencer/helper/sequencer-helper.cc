@@ -3,6 +3,7 @@
 #include "sequencer-helper.h"
 #include "ns3/log.h"
 #include "ns3/node.h"
+#include "ns3/names.h"
 
 namespace ns3 {
 
@@ -26,11 +27,10 @@ SequencerHelper::Install (Ptr<Node> node, NetDeviceContainer c)
   devs.Add (dev);
   node->AddDevice (dev);
 
-  for (NetDeviceContainer::Iterator i = c.Begin (); i != c.End (); ++i)
-    {
+  for (NetDeviceContainer::Iterator i = c.Begin (); i != c.End (); ++i) {
       NS_LOG_LOGIC ("**** Add SwitchPort "<< *i);
       dev->AddSwitchPort (*i);
-    }
+  }
   return devs;
 }
 
