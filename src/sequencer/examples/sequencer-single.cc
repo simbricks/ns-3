@@ -48,7 +48,7 @@ main(int argc, char *argv[])
 
   NS_LOG_INFO("Create Switch");
   SequencerHelper sequencer;
-  sequencer.Install(switchNode.Get(0), switchDevices);
+  sequencer.Install(switchNode.Get(0), switchDevices, true);
 
   NS_LOG_INFO("Create Cosim");
   Ptr<CosimNetDevice> cosim = CreateObject<CosimNetDevice>();

@@ -51,7 +51,7 @@ public:
 
   virtual bool SupportsSendFrom (void) const override;
 
-  void AddSwitchPort (Ptr<NetDevice> switchPort);
+  void AddSwitchPort (Ptr<NetDevice> switchPort, bool replica);
 
 private:
   void ReceiveFromDevice (Ptr<NetDevice> port,
@@ -73,6 +73,7 @@ private:
   Mac48Address m_address;
   Ptr<Node> m_node;
   std::vector< Ptr<NetDevice> > m_ports;
+  std::vector< Ptr<NetDevice> > m_replica_ports;
   NetDevice::ReceiveCallback m_rxCallback;
   NetDevice::PromiscReceiveCallback m_promiscRxCallback;
 

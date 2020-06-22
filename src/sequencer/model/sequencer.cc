@@ -237,7 +237,7 @@ SequencerNetDevice::SupportsSendFrom (void) const
 }
 
 void
-SequencerNetDevice::AddSwitchPort (Ptr<NetDevice> switchPort)
+SequencerNetDevice::AddSwitchPort (Ptr<NetDevice> switchPort, bool replica)
 {
   NS_LOG_FUNCTION_NOARGS ();
   NS_ASSERT (switchPort != this);
@@ -254,6 +254,9 @@ SequencerNetDevice::AddSwitchPort (Ptr<NetDevice> switchPort)
                                                  this),
                                    0, switchPort, true);
   m_ports.push_back (switchPort);
+  if (replica) {
+    m_replica_ports.push_back (switchPort);
+  }
 }
 
 void
@@ -273,7 +276,6 @@ SequencerNetDevice::ReceiveFromDevice (Ptr<NetDevice> inPort,
     m_promiscRxCallback (this, packet, protocol, src, dst, packetType);
   }
 
-  printf("Received packet!\n");
   switch (packetType) {
   case PACKET_HOST:
     if (dstMac == m_address) {
@@ -327,16 +329,20 @@ SequencerNetDevice::ForwardBroadcast (Ptr<NetDevice> inPort,
   size_t buf_size = packet->GetSize();
   uint8_t *buffer = new uint8_t[buf_size];
   packet->CopyData(buffer, buf_size);
+  std::vector< Ptr<NetDevice> > *ports;
 
   if (MatchOrderedMulticast(buffer)) {
     /* OUM packet */
+    ports = &m_replica_ports;
   } else {
     /* Regular broadcast */
-    for (auto iter = m_ports.begin (); iter != m_ports.end (); iter++) {
-      Ptr<NetDevice> port = *iter;
-      if (port != inPort) {
-        port->SendFrom (packet->Copy (), src, dst, protocol);
-      }
+    ports = &m_ports;
+  }
+
+  for (auto iter = ports->begin (); iter != ports->end (); iter++) {
+    Ptr<NetDevice> port = *iter;
+    if (port != inPort) {
+      port->SendFrom (packet->Copy (), src, dst, protocol);
     }
   }
 

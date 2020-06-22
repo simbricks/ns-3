@@ -14,7 +14,7 @@ class SequencerHelper
 public:
   SequencerHelper ();
 
-  NetDeviceContainer Install (Ptr<Node> node, NetDeviceContainer c);
+  NetDeviceContainer Install (Ptr<Node> node, NetDeviceContainer c, bool replica);
 
 private:
   ObjectFactory m_deviceFactory;
