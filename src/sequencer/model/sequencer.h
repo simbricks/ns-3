@@ -78,6 +78,8 @@ private:
   NetDevice::PromiscReceiveCallback m_promiscRxCallback;
 
   std::map<Mac48Address, Ptr<NetDevice> > m_learnState;
+  uint64_t m_session_id;
+  uint64_t m_seqnum;
 };
 
 } // namespace ns3

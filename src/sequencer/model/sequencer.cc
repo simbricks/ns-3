@@ -15,6 +15,7 @@
 #include "ns3/string.h"
 #include "ns3/simulator.h"
 
+#define NONFRAG_MAGIC 0x20050318
 #define OUMADDR "10.1.0.255"
 
 namespace ns3 {
@@ -38,7 +39,8 @@ SequencerNetDevice::GetTypeId (void)
 }
 
 SequencerNetDevice::SequencerNetDevice ()
-  : m_mtu(1500), m_node(nullptr), m_rxCallback(nullptr), m_promiscRxCallback(nullptr)
+  : m_mtu(1500), m_node(nullptr), m_rxCallback(nullptr), m_promiscRxCallback(nullptr),
+  m_session_id(0), m_seqnum(0)
 {
   NS_LOG_FUNCTION_NOARGS ();
 }
@@ -329,20 +331,40 @@ SequencerNetDevice::ForwardBroadcast (Ptr<NetDevice> inPort,
   size_t buf_size = packet->GetSize();
   uint8_t *buffer = new uint8_t[buf_size];
   packet->CopyData(buffer, buf_size);
+
+  Ptr<Packet> pkt_tosend;
   std::vector< Ptr<NetDevice> > *ports;
 
-  if (MatchOrderedMulticast(buffer)) {
+  if (MatchOrderedMulticast (buffer)) {
     /* OUM packet */
+    uint8_t *pktptr = buffer;
+    pktptr += sizeof (struct iphdr);
+    struct udphdr *udph = (struct udphdr *)pktptr;
+    // Disable udp checksum
+    udph->check = 0;
+    pktptr += sizeof (struct udphdr);
+    // Increment sequence number
+    pktptr += sizeof(uint32_t); // FRAG_MAGIC
+    pktptr += sizeof(uint32_t); // header data len
+    pktptr += sizeof(uint16_t); // udp src port
+    *(uint64_t *)pktptr = m_session_id; // session id
+    pktptr += sizeof(uint64_t);
+    pktptr += sizeof(uint32_t); // number of groups
+    pktptr += sizeof(uint32_t); // group ID
+    *(uint64_t *)pktptr = ++m_seqnum; // sequence number
+
     ports = &m_replica_ports;
+    pkt_tosend = Create<Packet> (buffer, buf_size);
   } else {
     /* Regular broadcast */
     ports = &m_ports;
+    pkt_tosend = packet->Copy ();
   }
 
   for (auto iter = ports->begin (); iter != ports->end (); iter++) {
     Ptr<NetDevice> port = *iter;
     if (port != inPort) {
-      port->SendFrom (packet->Copy (), src, dst, protocol);
+      port->SendFrom (pkt_tosend, src, dst, protocol);
     }
   }
 
@@ -382,6 +404,10 @@ SequencerNetDevice::MatchOrderedMulticast (const uint8_t *pkt)
   saddr.sin_addr.s_addr = iph->daddr;
   inet_ntop(AF_INET, &(saddr.sin_addr), destip, sizeof(destip));
   if (strcmp(destip, OUMADDR)) {
+    return false;
+  }
+  pkt += sizeof(struct iphdr) + sizeof(struct udphdr);
+  if (*(uint32_t *)pkt != NONFRAG_MAGIC) {
     return false;
   }
   return true;
