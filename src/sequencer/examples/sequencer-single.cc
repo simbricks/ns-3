@@ -50,19 +50,24 @@ main(int argc, char *argv[])
   SequencerHelper sequencer;
   sequencer.Install(switchNode.Get(0), switchDevices, true);
 
-  NS_LOG_INFO("Create Cosim");
-  Ptr<CosimNetDevice> cosim = CreateObject<CosimNetDevice>();
-  cosim->SetAttribute("Sync", BooleanValue(false));
-  terminals.Get(0)->AddDevice(cosim);
+  NS_LOG_INFO("Create Cosims and Bridges");
+  for (int i = 0; i < 2; i++) {
+    Ptr<CosimNetDevice> cosim = CreateObject<CosimNetDevice>();
+    cosim->SetAttribute("Sync", BooleanValue(false));
+    char path[64];
+    sprintf(path, "/tmp/cosim-eth-%d", i);
+    cosim->SetAttribute("UnixSocket", StringValue(path));
 
-  NS_LOG_INFO("Create Bridge");
-  Ptr<BridgeNetDevice> bridge = CreateObject<BridgeNetDevice>();
-  bridge->SetAddress(Mac48Address::Allocate());
-  terminals.Get(0)->AddDevice(bridge);
-  bridge->AddBridgePort(terminalDevices.Get(0));
-  bridge->AddBridgePort(cosim);
+    Ptr<BridgeNetDevice> bridge = CreateObject<BridgeNetDevice>();
+    bridge->SetAddress(Mac48Address::Allocate());
 
-  cosim->Start();
+    terminals.Get(i)->AddDevice(cosim);
+    terminals.Get(i)->AddDevice(bridge);
+    bridge->AddBridgePort(terminalDevices.Get(i));
+    bridge->AddBridgePort(cosim);
+
+    cosim->Start();
+  }
 
   Simulator::Run();
   Simulator::Destroy();
