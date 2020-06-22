@@ -66,6 +66,7 @@ private:
                          uint16_t protocol, Mac48Address src, Mac48Address dst);
   void ForwardUnicast (Ptr<NetDevice> port, Ptr<const Packet> packet,
                        uint16_t protocol, Mac48Address src, Mac48Address dst);
+  bool MatchOrderedMulticast (const uint8_t *pkt);
 
   uint16_t m_mtu;
   uint32_t m_ifIndex;

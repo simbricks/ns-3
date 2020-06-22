@@ -7,6 +7,7 @@
 #include "ns3/applications-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/sequencer-helper.h"
+#include "ns3/cosim.h"
 
 using namespace ns3;
 
@@ -19,18 +20,18 @@ main(int argc, char *argv[])
   LogComponentEnable("UdpEchoClientApplication", LOG_LEVEL_INFO);
   LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_INFO);
 
-  Time linkLatency(MilliSeconds (10));
+  Time linkLatency(MilliSeconds(10));
   DataRate linkRate("10Mb/s");
 
-  GlobalValue::Bind("ChecksumEnabled", BooleanValue (true));
+  GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
 
   NS_LOG_INFO("Create Client and Server Nodes");
   NodeContainer terminals;
-  terminals.Create (2);
+  terminals.Create(2);
 
   NS_LOG_INFO("Create Switch Node");
   NodeContainer switchNode;
-  switchNode.Create (1);
+  switchNode.Create(1);
 
   NS_LOG_INFO("Create simple channel");
   SimpleNetDeviceHelper simpleChannel;
@@ -49,27 +50,19 @@ main(int argc, char *argv[])
   SequencerHelper sequencer;
   sequencer.Install(switchNode.Get(0), switchDevices);
 
-  NS_LOG_INFO("Install Stack and Assign Addresses");
-  InternetStackHelper internet;
-  internet.Install(terminals);
+  NS_LOG_INFO("Create Cosim");
+  Ptr<CosimNetDevice> cosim = CreateObject<CosimNetDevice>();
+  cosim->SetAttribute("Sync", BooleanValue(false));
+  terminals.Get(0)->AddDevice(cosim);
 
-  Ipv4AddressHelper ipv4;
-  ipv4.SetBase("10.1.1.0", "255.255.255.0");
-  Ipv4InterfaceContainer interfaces = ipv4.Assign(terminalDevices);
+  NS_LOG_INFO("Create Bridge");
+  Ptr<BridgeNetDevice> bridge = CreateObject<BridgeNetDevice>();
+  bridge->SetAddress(Mac48Address::Allocate());
+  terminals.Get(0)->AddDevice(bridge);
+  bridge->AddBridgePort(terminalDevices.Get(0));
+  bridge->AddBridgePort(cosim);
 
-  NS_LOG_INFO("Create Application");
-  UdpEchoServerHelper echoServer(12345);
-  ApplicationContainer serverApp = echoServer.Install(terminals.Get(0));
-  serverApp.Start(Seconds(1.0));
-  serverApp.Stop(Seconds(10.0));
-
-  UdpEchoClientHelper echoClient(interfaces.GetAddress(0), 12345);
-  echoClient.SetAttribute("MaxPackets", UintegerValue(10));
-  echoClient.SetAttribute("Interval", TimeValue(Seconds(1.0)));
-  echoClient.SetAttribute("PacketSize", UintegerValue(1024));
-  ApplicationContainer clientApp = echoClient.Install(terminals.Get(1));
-  clientApp.Start(Seconds(2.0));
-  clientApp.Stop(Seconds(10.0));
+  cosim->Start();
 
   Simulator::Run();
   Simulator::Destroy();

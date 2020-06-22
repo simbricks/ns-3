@@ -1,5 +1,11 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
+#include <arpa/inet.h>
+#include <net/ethernet.h>
+#include <linux/ip.h>
+#include <linux/udp.h>
+#include <linux/in.h>
+
 #include "sequencer.h"
 
 #include "ns3/node.h"
@@ -8,6 +14,8 @@
 #include "ns3/boolean.h"
 #include "ns3/string.h"
 #include "ns3/simulator.h"
+
+#define OUMADDR "10.1.0.255"
 
 namespace ns3 {
 
@@ -265,6 +273,7 @@ SequencerNetDevice::ReceiveFromDevice (Ptr<NetDevice> inPort,
     m_promiscRxCallback (this, packet, protocol, src, dst, packetType);
   }
 
+  printf("Received packet!\n");
   switch (packetType) {
   case PACKET_HOST:
     if (dstMac == m_address) {
@@ -315,12 +324,23 @@ SequencerNetDevice::ForwardBroadcast (Ptr<NetDevice> inPort,
   NS_LOG_FUNCTION_NOARGS ();
   Learn (src, inPort);
 
-  for (auto iter = m_ports.begin (); iter != m_ports.end (); iter++) {
-    Ptr<NetDevice> port = *iter;
-    if (port != inPort) {
-      port->SendFrom (packet->Copy (), src, dst, protocol);
+  size_t buf_size = packet->GetSize();
+  uint8_t *buffer = new uint8_t[buf_size];
+  packet->CopyData(buffer, buf_size);
+
+  if (MatchOrderedMulticast(buffer)) {
+    /* OUM packet */
+  } else {
+    /* Regular broadcast */
+    for (auto iter = m_ports.begin (); iter != m_ports.end (); iter++) {
+      Ptr<NetDevice> port = *iter;
+      if (port != inPort) {
+        port->SendFrom (packet->Copy (), src, dst, protocol);
+      }
     }
   }
+
+  delete [] buffer;
 }
 
 void
@@ -344,6 +364,21 @@ SequencerNetDevice::ForwardUnicast (Ptr<NetDevice> inPort,
       }
     }
   }
+}
+
+bool
+SequencerNetDevice::MatchOrderedMulticast (const uint8_t *pkt)
+{
+  // IP
+  struct iphdr *iph = (struct iphdr *)pkt;
+  struct sockaddr_in saddr;
+  char destip[INET6_ADDRSTRLEN];
+  saddr.sin_addr.s_addr = iph->daddr;
+  inet_ntop(AF_INET, &(saddr.sin_addr), destip, sizeof(destip));
+  if (strcmp(destip, OUMADDR)) {
+    return false;
+  }
+  return true;
 }
 
 } // namespace ns3
