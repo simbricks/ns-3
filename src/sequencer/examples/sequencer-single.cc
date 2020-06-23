@@ -20,8 +20,8 @@ main(int argc, char *argv[])
   LogComponentEnable("UdpEchoClientApplication", LOG_LEVEL_INFO);
   LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_INFO);
 
-  Time linkLatency(MilliSeconds(10));
-  DataRate linkRate("10Mb/s");
+  Time linkLatency(MicroSeconds(50));
+  DataRate linkRate("1Gb/s");
 
   GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
 
