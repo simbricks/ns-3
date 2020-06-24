@@ -17,7 +17,9 @@ SequencerHelper::SequencerHelper ()
 }
 
 NetDeviceContainer
-SequencerHelper::Install (Ptr<Node> node, NetDeviceContainer c, bool replica)
+SequencerHelper::Install (Ptr<Node> node,
+                          NetDeviceContainer replicas,
+                          NetDeviceContainer non_replicas)
 {
   NS_LOG_FUNCTION_NOARGS ();
   NS_LOG_LOGIC ("**** Install sequencer device on node " << node->GetId ());
@@ -27,9 +29,14 @@ SequencerHelper::Install (Ptr<Node> node, NetDeviceContainer c, bool replica)
   devs.Add (dev);
   node->AddDevice (dev);
 
-  for (NetDeviceContainer::Iterator i = c.Begin (); i != c.End (); ++i) {
+  for (NetDeviceContainer::Iterator i = replicas.Begin (); i != replicas.End (); ++i) {
       NS_LOG_LOGIC ("**** Add SwitchPort "<< *i);
-      dev->AddSwitchPort (*i, replica);
+      dev->AddSwitchPort (*i, true);
+  }
+  for (NetDeviceContainer::Iterator i = non_replicas.Begin ();
+       i != non_replicas.End (); ++i) {
+      NS_LOG_LOGIC ("**** Add SwitchPort "<< *i);
+      dev->AddSwitchPort (*i, false);
   }
   return devs;
 }

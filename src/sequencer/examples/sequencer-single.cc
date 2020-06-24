@@ -33,6 +33,7 @@ int
 main(int argc, char *argv[])
 {
   LogComponentEnable("SequencerExample", LOG_LEVEL_INFO);
+  LogComponentEnable("SequencerNetDevice", LOG_LEVEL_INFO);
 
   Time linkLatency(MicroSeconds(50));
   DataRate linkRate("1Gb/s");
@@ -83,8 +84,7 @@ main(int argc, char *argv[])
 
   NS_LOG_INFO("Create Switch");
   SequencerHelper sequencer;
-  sequencer.Install(switchNode.Get(0), switchClientDevices, false);
-  sequencer.Install(switchNode.Get(0), switchServerDevices, true);
+  sequencer.Install(switchNode.Get(0), switchServerDevices, switchClientDevices);
 
   NS_LOG_INFO("Create Cosims and Bridges");
   for (unsigned i = 0; i < clientNodes.GetN(); i++) {

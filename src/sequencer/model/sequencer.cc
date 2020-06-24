@@ -364,7 +364,7 @@ SequencerNetDevice::ForwardBroadcast (Ptr<NetDevice> inPort,
   for (auto iter = ports->begin (); iter != ports->end (); iter++) {
     Ptr<NetDevice> port = *iter;
     if (port != inPort) {
-      port->SendFrom (pkt_tosend, src, dst, protocol);
+      port->SendFrom (pkt_tosend->Copy (), src, dst, protocol);
     }
   }
 
