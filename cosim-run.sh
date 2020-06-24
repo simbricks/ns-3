@@ -4,7 +4,8 @@ cd $DIR
 
 export LD_LIBRARY_PATH="$DIR/build/lib/:$LD_LIBRARY_PATH"
 
-example=$1
-shift
+module=$1
+example=$2
+shift 2
 
-exec build/src/cosim/examples/ns3-dev-$example-debug "$@"
+exec build/src/$module/examples/ns3-dev-$example-debug "$@"
