@@ -31,12 +31,12 @@ SequencerHelper::Install (Ptr<Node> node,
 
   for (NetDeviceContainer::Iterator i = replicas.Begin (); i != replicas.End (); ++i) {
       NS_LOG_LOGIC ("**** Add SwitchPort "<< *i);
-      dev->AddSwitchPort (*i, true);
+      dev->AddSwitchPort (*i, true, false);
   }
   for (NetDeviceContainer::Iterator i = non_replicas.Begin ();
        i != non_replicas.End (); ++i) {
       NS_LOG_LOGIC ("**** Add SwitchPort "<< *i);
-      dev->AddSwitchPort (*i, false);
+      dev->AddSwitchPort (*i, false, false);
   }
   return devs;
 }

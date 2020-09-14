@@ -239,7 +239,7 @@ SequencerNetDevice::SupportsSendFrom (void) const
 }
 
 void
-SequencerNetDevice::AddSwitchPort (Ptr<NetDevice> switchPort, bool replica)
+SequencerNetDevice::AddSwitchPort (Ptr<NetDevice> switchPort, bool replica, bool endhost_sequencer)
 {
   NS_LOG_FUNCTION_NOARGS ();
   NS_ASSERT (switchPort != this);
@@ -256,7 +256,11 @@ SequencerNetDevice::AddSwitchPort (Ptr<NetDevice> switchPort, bool replica)
                                                  this),
                                    0, switchPort, true);
   m_ports.push_back (switchPort);
-  if (replica) {
+  NS_ASSERT (!(replica && endhost_sequencer));
+  if (endhost_sequencer) {
+      NS_ASSERT (m_endhost_sequencer_ports.empty ()); // Only one endhost sequencer
+      m_endhost_sequencer_ports.push_back (switchPort);
+  } else if (replica) {
     m_replica_ports.push_back (switchPort);
   }
 }
@@ -337,24 +341,36 @@ SequencerNetDevice::ForwardBroadcast (Ptr<NetDevice> inPort,
 
   if (MatchOrderedMulticast (buffer)) {
     /* OUM packet */
-    uint8_t *pktptr = buffer;
-    pktptr += sizeof (struct iphdr);
-    struct udphdr *udph = (struct udphdr *)pktptr;
-    // Disable udp checksum
-    udph->check = 0;
-    pktptr += sizeof (struct udphdr);
-    // Increment sequence number
-    pktptr += sizeof(uint32_t); // FRAG_MAGIC
-    pktptr += sizeof(uint32_t); // header data len
-    pktptr += sizeof(uint16_t); // udp src port
-    *(uint64_t *)pktptr = m_session_id; // session id
-    pktptr += sizeof(uint64_t);
-    pktptr += sizeof(uint32_t); // number of groups
-    pktptr += sizeof(uint32_t); // group ID
-    *(uint64_t *)pktptr = ++m_seqnum; // sequence number
+    if (!m_endhost_sequencer_ports.empty ()) {
+      // Using endhost sequencer:
+      // From client: forward to sequencer
+      // From sequencer: multicast to replicas
+      if (inPort == m_endhost_sequencer_ports.at (0)) {
+        ports = &m_replica_ports;
+      } else {
+        ports = &m_endhost_sequencer_ports;
+      }
+      pkt_tosend = packet->Copy ();
+    } else {
+      uint8_t *pktptr = buffer;
+      pktptr += sizeof (struct iphdr);
+      struct udphdr *udph = (struct udphdr *)pktptr;
+      // Disable udp checksum
+      udph->check = 0;
+      pktptr += sizeof (struct udphdr);
+      // Increment sequence number
+      pktptr += sizeof(uint32_t); // FRAG_MAGIC
+      pktptr += sizeof(uint32_t); // header data len
+      pktptr += sizeof(uint16_t); // udp src port
+      *(uint64_t *)pktptr = m_session_id; // session id
+      pktptr += sizeof(uint64_t);
+      pktptr += sizeof(uint32_t); // number of groups
+      pktptr += sizeof(uint32_t); // group ID
+      *(uint64_t *)pktptr = ++m_seqnum; // sequence number
 
-    ports = &m_replica_ports;
-    pkt_tosend = Create<Packet> (buffer, buf_size);
+      ports = &m_replica_ports;
+      pkt_tosend = Create<Packet> (buffer, buf_size);
+    }
   } else {
     /* Regular broadcast */
     ports = &m_ports;
