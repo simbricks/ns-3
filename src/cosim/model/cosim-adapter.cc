@@ -86,8 +86,8 @@ bool CosimAdapter::Transmit (Ptr<const Packet> packet)
   volatile union cosim_eth_proto_n2d *msg;
   volatile struct cosim_eth_proto_n2d_recv *recv;
 
-  NS_ABORT_MSG_IF (packet->GetSize () > 2048,
-          "CosimAdapter::Transmit: packet too large");
+  /*NS_ABORT_MSG_IF (packet->GetSize () > 2048,
+          "CosimAdapter::Transmit: packet too large");*/
 
   msg = AllocTx ();
   recv = &msg->recv;
