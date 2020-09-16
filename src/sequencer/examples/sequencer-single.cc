@@ -32,6 +32,8 @@ AddServerPort(std::string arg)
 int
 main(int argc, char *argv[])
 {
+  Time::SetResolution (Time::Unit::PS);
+
   LogComponentEnable("SequencerExample", LOG_LEVEL_INFO);
   LogComponentEnable("SequencerNetDevice", LOG_LEVEL_INFO);
 

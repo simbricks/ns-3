@@ -34,6 +34,8 @@ NS_LOG_COMPONENT_DEFINE ("CosimExample");
 int
 main (int argc, char *argv[])
 {
+  Time::SetResolution (Time::Unit::PS);
+
   std::cout << "starting nw" << std::endl;
 
   //LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);

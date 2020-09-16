@@ -43,6 +43,8 @@ bool AddCosimPort (std::string arg)
 int
 main (int argc, char *argv[])
 {
+  Time::SetResolution (Time::Unit::PS);
+
   CommandLine cmd (__FILE__);
   cmd.AddValue ("CosimPort", "Add a cosim ethernet port to the bridge",
       MakeCallback (&AddCosimPort));

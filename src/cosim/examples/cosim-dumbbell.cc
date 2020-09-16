@@ -53,6 +53,8 @@ bool AddCosimRightPort (std::string arg)
 int
 main (int argc, char *argv[])
 {
+  Time::SetResolution (Time::Unit::PS);
+
   Time linkLatency(MilliSeconds (10));
   DataRate linkRate("10Mb/s");
 
