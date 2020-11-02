@@ -40,6 +40,7 @@ std::vector<std::string> cosimLeftPaths;
 std::vector<std::string> cosimRightPaths;
 
 std::ofstream LeftQueueLength;
+std::ofstream Qstat;
 
 bool AddCosimLeftPort (std::string arg)
 {
@@ -53,6 +54,7 @@ bool AddCosimRightPort (std::string arg)
   return true;
 }
 
+
 void
 CheckLeftQueueSize (Ptr<QueueDisc> queue)
 {
@@ -62,7 +64,22 @@ CheckLeftQueueSize (Ptr<QueueDisc> queue)
   // report size in units of packets and ms
   LeftQueueLength << std::fixed << std::setprecision (9) << Simulator::Now ().GetSeconds () << " " << qSize << " " << backlog.GetMicroSeconds () << std::endl;
   // check queue size every 1/100 of a second
-  Simulator::Schedule (MilliSeconds (100), &CheckLeftQueueSize, queue);
+  Simulator::Schedule (MilliSeconds (1), &CheckLeftQueueSize, queue);
+}
+
+
+void
+CheckQstat(Ptr<QueueDisc> Disc_0, Ptr<QueueDisc> Disc_1){
+  
+  QueueDisc::Stats st = Disc_0->GetStats ();
+  Qstat << "*** RED stats from Node 0 queue disc ***" << std::endl;
+  Qstat << st << std::endl;
+
+  st = Disc_1->GetStats ();
+  Qstat << "*** RED stats from Node 1 queue disc ***" << std::endl;
+  Qstat << st << std::endl;
+  Simulator::Schedule (MilliSeconds (10), &CheckQstat, Disc_0, Disc_1);
+
 }
 
 int
@@ -82,17 +99,22 @@ main (int argc, char *argv[])
       MakeCallback (&AddCosimRightPort));
   cmd.Parse (argc, argv);
 
-  LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
+  //LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
   //LogComponentEnable("BridgeNetDevice", LOG_LEVEL_ALL);
-  //LogComponentEnable("CosimDumbbellExample", LOG_LEVEL_ALL);
+  LogComponentEnable("CosimDumbbellExample", LOG_LEVEL_ALL);
   //LogComponentEnable("SimpleChannel", LOG_LEVEL_ALL);
-  LogComponentEnable("SimpleNetDevice", LOG_LEVEL_ALL);
+  //LogComponentEnable("SimpleNetDevice", LOG_LEVEL_ALL);
   //LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
+  //LogComponentEnable ("DropTailQueue", LOG_LEVEL_ALL);
+  LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
+  //LogComponentEnable ("Queue", LOG_LEVEL_ALL);
+  //LogComponentEnable ("TrafficControlLayer", LOG_LEVEL_ALL);
 
-  //LogComponentEnableAll(LOG_PREFIX_TIME);
-  //LogComponentEnableAll(LOG_PREFIX_NODE);
+  LogComponentEnableAll(LOG_PREFIX_TIME);
+  LogComponentEnableAll(LOG_PREFIX_NODE);
 
   GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
+  //GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
 
 // Set default parameters for RED queue disc
   Config::SetDefault ("ns3::RedQueueDisc::UseEcn", BooleanValue (true));
@@ -101,18 +123,8 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::RedQueueDisc::MaxSize", QueueSizeValue (QueueSize ("2666p")));
 // DCTCP tracks instantaneous queue length only; so set QW = 1
   Config::SetDefault ("ns3::RedQueueDisc::QW", DoubleValue (1));
-  Config::SetDefault ("ns3::RedQueueDisc::MinTh", DoubleValue (1));
-  Config::SetDefault ("ns3::RedQueueDisc::MaxTh", DoubleValue (2));
-  
-
-  TrafficControlHelper tchRed10;
-  // MinTh = 50, MaxTh = 150 recommended in ACM SIGCOMM 2010 DCTCP Paper
-  // This yields a target (MinTh) queue depth of 60us at 10 Gb/s
-  tchRed10.SetRootQueueDisc ("ns3::RedQueueDisc",
-                             "LinkBandwidth", DataRateValue(linkRate),
-                             "LinkDelay", TimeValue (linkLatency),
-                             "MinTh", DoubleValue (1),
-                             "MaxTh", DoubleValue (2));
+  Config::SetDefault ("ns3::RedQueueDisc::MinTh", DoubleValue (10));
+  Config::SetDefault ("ns3::RedQueueDisc::MaxTh", DoubleValue (15));
 
 
   
@@ -137,7 +149,8 @@ main (int argc, char *argv[])
   
   //PointToPointHelper pointToPointSR;
   SimpleNetDeviceHelper pointToPointSR;
-  pointToPointSR.SetQueue("ns3::DropTailQueue", "MaxSize", StringValue("1p"));
+  pointToPointSR.SetQueue("ns3::DevRedQueue", "MaxSize", StringValue("100p"));
+  //pointToPointSR.SetQueue("ns3::RedQueueDisc", "MaxSize", StringValue("100p"));
   pointToPointSR.SetDeviceAttribute ("DataRate", DataRateValue(linkRate));
   pointToPointSR.SetChannelAttribute ("Delay", TimeValue (linkLatency));
 
@@ -153,6 +166,16 @@ main (int argc, char *argv[])
   //ptpDevRight = pointToPointSR.Install (nodeLeft, nodeRight).Get(1);
   //NetDeviceContainer ptpDev = pointToPointSR.Install (nodeLeft, nodeRight);
   NetDeviceContainer ptpDev = pointToPointSR.Install (nodes, ptpChan);
+  
+
+  TrafficControlHelper tchRed10;
+  // MinTh = 50, MaxTh = 150 recommended in ACM SIGCOMM 2010 DCTCP Paper
+  // This yields a target (MinTh) queue depth of 60us at 10 Gb/s
+  tchRed10.SetRootQueueDisc ("ns3::RedQueueDisc",
+                             "LinkBandwidth", DataRateValue(linkRate),
+                             "LinkDelay", TimeValue (linkLatency),
+                             "MinTh", DoubleValue (1),
+                             "MaxTh", DoubleValue (1));
 
   InternetStackHelper stack;
   stack.InstallAll ();
@@ -177,6 +200,8 @@ main (int argc, char *argv[])
   bridgeRight->AddBridgePort (nodeRight->GetDevice(1));
 
   NS_LOG_INFO ("Create CosimDevices and add them to bridge");
+  NS_LOG_INFO("cosim path :" << cosimLeftPaths[0]);
+  
   for (std::string cpp : cosimLeftPaths) {
     Ptr<CosimNetDevice> device = CreateObject<CosimNetDevice> ();
     device->SetAttribute ("UnixSocket", StringValue (cpp));
@@ -192,14 +217,19 @@ main (int argc, char *argv[])
     device->Start ();
   }
 
+  
   //AsciiTraceHelper ascii;
   //pointToPointSR.EnableAsciiAll (ascii.CreateFileStream ("cosim.tr"));
   //pointToPointSR.EnablePcap ("cosim", ptpDev, 0);
   LeftQueueLength.open ("cosim-left-length.dat", std::ios::out);
+  Qstat.open ("cosim-qstat.dat", std::ios::out);
   Simulator::Schedule (Seconds (0.0), &CheckLeftQueueSize, queueDiscs1.Get (0));
-
+  Simulator::Schedule (Seconds (0.0), &CheckQstat, queueDiscs1.Get(0), queueDiscs1.Get(1));
+  
   NS_LOG_INFO ("Run Emulation.");
   Simulator::Run ();
+
+
   Simulator::Destroy ();
   NS_LOG_INFO ("Done.");
 }
