@@ -60,6 +60,8 @@ private:
   using Queue<Item>::DoRemove;
   using Queue<Item>::DoPeek;
 
+  double m_minTh;
+
   NS_LOG_TEMPLATE_DECLARE;     //!< redefinition of the log component
 };
 
@@ -72,17 +74,19 @@ template <typename Item>
 TypeId
 DevRedQueue<Item>::GetTypeId (void)
 {
-  static TypeId tid = TypeId (("ns3::DevRedQueue<" + GetTypeParamName<DevRedQueue<Item> > () + ">").c_str ())
-    .SetParent<Queue<Item> > ()
-    .SetGroupName ("Network")
-    .template AddConstructor<DevRedQueue<Item> > ()
-    .AddAttribute ("MaxSize",
-                   "The max queue size",
-                   QueueSizeValue (QueueSize ("100p")),
-                   MakeQueueSizeAccessor (&QueueBase::SetMaxSize,
-                                          &QueueBase::GetMaxSize),
-                   MakeQueueSizeChecker ())
-  ;
+  static TypeId tid =
+      TypeId (("ns3::DevRedQueue<" + GetTypeParamName<DevRedQueue<Item>> () + ">").c_str ())
+          .SetParent<Queue<Item>> ()
+          .SetGroupName ("Network")
+          .template AddConstructor<DevRedQueue<Item>> ()
+          .AddAttribute ("MaxSize", "The max queue size", QueueSizeValue (QueueSize ("100p")),
+                         MakeQueueSizeAccessor (&QueueBase::SetMaxSize, &QueueBase::GetMaxSize),
+                         MakeQueueSizeChecker ())
+          .AddAttribute ("MinTh", "Minimum length threshold in packets",
+                         DoubleValue (10), MakeDoubleAccessor (&DevRedQueue::m_minTh),
+                         MakeDoubleChecker<double> ())
+                         ;
+
   return tid;
 }
 
@@ -106,9 +110,7 @@ DevRedQueue<Item>::Enqueue (Ptr<Item> item)
 {
   NS_LOG_FUNCTION (this << item);
   //NS_LOG_LOGIC ("DevRedQueue Enqueue  " << item);
- 
-  //Ipv4Header header_new;
-  //Ipv4Header header_old;
+
   Ipv4Header header;
   Ipv4Address destination;
   Ipv4Address source, masked;
@@ -116,25 +118,11 @@ DevRedQueue<Item>::Enqueue (Ptr<Item> item)
   Ipv4Header::EcnType ecn;
   Ipv4Mask mask("255.255.0.0");
 
+  //make a copy of the packet
   Ptr<Packet> q = item->Copy();
 
-  //item->PeekHeader(header_old);
-  //q->RemoveHeader (header_new);
+  //get the packet header
   item->RemoveHeader (header);
-
-  /*header_new.SetTrafficClass (header_old.GetTrafficClass ());
-  header_new.SetFlowLabel (header_old.GetFlowLabel ());
-  header_new.SetPayloadLength (header_old.GetPayloadLength ());
-
-  uint8_t nextHeader = header_old.GetNextHeader ();
-  header_new.SetNextHeader (nextHeader);
-  header_new.SetHopLimit (header_old.GetHopLimit ());
-
-  header_new.SetSourceAddress (header_old.GetSourceAddress ());
-  // ipHeader_new.SetDestinationAddress(ipHeader.GetDestinationAddress());
-  header_new.SetDestinationAddress (
-      header_old.GetSourceAddress ()); //Set Source Address as Destination Address (testing purpose)
-*/
 
   destination = header.GetDestination ();
   source = header.GetSource ();
@@ -142,32 +130,23 @@ DevRedQueue<Item>::Enqueue (Ptr<Item> item)
 
   ecn = header.GetEcn();
   if (masked == subnet){
-    if (ecn != Ipv4Header::ECN_NotECT){
+    NS_LOG_LOGIC("Redqueue size: " << QueueBase::GetCurrentSize() << "nPacket: " << QueueBase::GetNPackets());
+    if ((QueueBase::GetNPackets() >= m_minTh) && (ecn != Ipv4Header::ECN_NotECT)){
       NS_LOG_LOGIC("set ECN");
       header.SetEcn (Ipv4Header::ECN_CE);
     }
     
-    //Buffer buf(header.GetSerializedSize());
-    //Buffer::Iterator start(&buf);
-    
     header.EnableChecksum();
-    //header.Serialize(start);
-    //header.Deserialize(start);
-
-
     item->AddHeader (header);
 
-
-
     NS_LOG_LOGIC ("dst: " << destination << "source: " << source << " ECN: " << header.GetEcn());
+    //packet is IPv4 packet, send modified
     return DoEnqueue (end (), item);
   
   }
-
-
   
   //NS_LOG_LOGIC ("dest: " << destination << "  source: " << source << " ECN: " << ecn);
-  
+  // the packet is ARP, send original packet 
   return DoEnqueue (end (), q);
 }
 

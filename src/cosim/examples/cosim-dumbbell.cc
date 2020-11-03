@@ -89,10 +89,12 @@ main (int argc, char *argv[])
 
   Time linkLatency(MilliSeconds (10));
   DataRate linkRate("10Mb/s");
+  double ecnTh = 2666;
 
   CommandLine cmd (__FILE__);
   cmd.AddValue ("LinkLatency", "Propagation delay through link", linkLatency);
   cmd.AddValue ("LinkRate", "Link bandwidth", linkRate);
+  cmd.AddValue ("EcnTh", "ECN Threshold queue size", ecnTh);
   cmd.AddValue ("CosimPortLeft", "Add a cosim ethernet port to the bridge",
       MakeCallback (&AddCosimLeftPort));
   cmd.AddValue ("CosimPortRight", "Add a cosim ethernet port to the bridge",
@@ -101,12 +103,12 @@ main (int argc, char *argv[])
 
   //LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
   //LogComponentEnable("BridgeNetDevice", LOG_LEVEL_ALL);
-  LogComponentEnable("CosimDumbbellExample", LOG_LEVEL_ALL);
+  //LogComponentEnable("CosimDumbbellExample", LOG_LEVEL_ALL);
   //LogComponentEnable("SimpleChannel", LOG_LEVEL_ALL);
   //LogComponentEnable("SimpleNetDevice", LOG_LEVEL_ALL);
   //LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
   //LogComponentEnable ("DropTailQueue", LOG_LEVEL_ALL);
-  LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
+  //LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
   //LogComponentEnable ("Queue", LOG_LEVEL_ALL);
   //LogComponentEnable ("TrafficControlLayer", LOG_LEVEL_ALL);
 
@@ -117,6 +119,7 @@ main (int argc, char *argv[])
   //GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
 
 // Set default parameters for RED queue disc
+  /*
   Config::SetDefault ("ns3::RedQueueDisc::UseEcn", BooleanValue (true));
   Config::SetDefault ("ns3::RedQueueDisc::UseHardDrop", BooleanValue (false));
   Config::SetDefault ("ns3::RedQueueDisc::MeanPktSize", UintegerValue (1500));
@@ -125,7 +128,7 @@ main (int argc, char *argv[])
   Config::SetDefault ("ns3::RedQueueDisc::QW", DoubleValue (1));
   Config::SetDefault ("ns3::RedQueueDisc::MinTh", DoubleValue (10));
   Config::SetDefault ("ns3::RedQueueDisc::MaxTh", DoubleValue (15));
-
+*/
 
   
   NS_LOG_INFO ("Create Nodes");
@@ -149,7 +152,8 @@ main (int argc, char *argv[])
   
   //PointToPointHelper pointToPointSR;
   SimpleNetDeviceHelper pointToPointSR;
-  pointToPointSR.SetQueue("ns3::DevRedQueue", "MaxSize", StringValue("100p"));
+  pointToPointSR.SetQueue("ns3::DevRedQueue", "MaxSize", StringValue("2666p"));
+  pointToPointSR.SetQueue("ns3::DevRedQueue", "MinTh", DoubleValue (ecnTh));
   //pointToPointSR.SetQueue("ns3::RedQueueDisc", "MaxSize", StringValue("100p"));
   pointToPointSR.SetDeviceAttribute ("DataRate", DataRateValue(linkRate));
   pointToPointSR.SetChannelAttribute ("Delay", TimeValue (linkLatency));
@@ -168,19 +172,19 @@ main (int argc, char *argv[])
   NetDeviceContainer ptpDev = pointToPointSR.Install (nodes, ptpChan);
   
 
-  TrafficControlHelper tchRed10;
+  //TrafficControlHelper tchRed10;
   // MinTh = 50, MaxTh = 150 recommended in ACM SIGCOMM 2010 DCTCP Paper
   // This yields a target (MinTh) queue depth of 60us at 10 Gb/s
-  tchRed10.SetRootQueueDisc ("ns3::RedQueueDisc",
+  /*tchRed10.SetRootQueueDisc ("ns3::RedQueueDisc",
                              "LinkBandwidth", DataRateValue(linkRate),
                              "LinkDelay", TimeValue (linkLatency),
                              "MinTh", DoubleValue (1),
-                             "MaxTh", DoubleValue (1));
+                             "MaxTh", DoubleValue (1));*/
 
-  InternetStackHelper stack;
-  stack.InstallAll ();
+  //InternetStackHelper stack;
+  //stack.InstallAll ();
 
-  QueueDiscContainer queueDiscs1 = tchRed10.Install (ptpDev);
+  //QueueDiscContainer queueDiscs1 = tchRed10.Install (ptpDev);
 
   //ptpDevLeft->SetAttribute ("DataRate", DataRateValue(linkRate));
   //ptpDevRight->SetAttribute ("DataRate", DataRateValue(linkRate));
@@ -221,10 +225,10 @@ main (int argc, char *argv[])
   //AsciiTraceHelper ascii;
   //pointToPointSR.EnableAsciiAll (ascii.CreateFileStream ("cosim.tr"));
   //pointToPointSR.EnablePcap ("cosim", ptpDev, 0);
-  LeftQueueLength.open ("cosim-left-length.dat", std::ios::out);
-  Qstat.open ("cosim-qstat.dat", std::ios::out);
-  Simulator::Schedule (Seconds (0.0), &CheckLeftQueueSize, queueDiscs1.Get (0));
-  Simulator::Schedule (Seconds (0.0), &CheckQstat, queueDiscs1.Get(0), queueDiscs1.Get(1));
+  //LeftQueueLength.open ("cosim-left-length.dat", std::ios::out);
+  //Qstat.open ("cosim-qstat.dat", std::ios::out);
+  //Simulator::Schedule (Seconds (0.0), &CheckLeftQueueSize, queueDiscs1.Get (0));
+  //Simulator::Schedule (Seconds (0.0), &CheckQstat, queueDiscs1.Get(0), queueDiscs1.Get(1));
   
   NS_LOG_INFO ("Run Emulation.");
   Simulator::Run ();
