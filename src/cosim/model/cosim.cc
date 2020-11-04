@@ -54,7 +54,7 @@ TypeId CosimNetDevice::GetTypeId (void)
                    MakeStringChecker ())
     .AddAttribute ("SyncDelay",
                    "Max delay between outgoing messages before sync is sent",
-                   TimeValue (NanoSeconds (500.)),
+                   TimeValue (NanoSeconds (100.)),
                    MakeTimeAccessor (&CosimNetDevice::m_a_syncDelay),
                    MakeTimeChecker ())
     .AddAttribute ("PollDelay",
@@ -64,7 +64,7 @@ TypeId CosimNetDevice::GetTypeId (void)
                    MakeTimeChecker ())
     .AddAttribute ("EthLatency",
                    "Max delay between outgoing messages before sync is sent",
-                   TimeValue (MicroSeconds (1.)),
+                   TimeValue (NanoSeconds (500.)),
                    MakeTimeAccessor (&CosimNetDevice::m_a_ethLatency),
                    MakeTimeChecker ())
     .AddAttribute ("Sync",
