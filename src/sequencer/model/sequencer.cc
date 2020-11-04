@@ -255,7 +255,9 @@ SequencerNetDevice::AddSwitchPort (Ptr<NetDevice> switchPort, bool replica, bool
   m_node->RegisterProtocolHandler (MakeCallback (&SequencerNetDevice::ReceiveFromDevice,
                                                  this),
                                    0, switchPort, true);
-  m_ports.push_back (switchPort);
+  if (!endhost_sequencer) {
+    m_ports.push_back (switchPort);
+  }
   NS_ASSERT (!(replica && endhost_sequencer));
   if (endhost_sequencer) {
       NS_ASSERT (m_endhost_sequencer_ports.empty ()); // Only one endhost sequencer
@@ -309,6 +311,12 @@ void
 SequencerNetDevice::Learn (Mac48Address source, Ptr<NetDevice> inPort)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  // Do not learn packets from endhost sequencer
+  if (!m_endhost_sequencer_ports.empty ()) {
+    if (inPort == m_endhost_sequencer_ports.at (0)) {
+      return;
+    }
+  }
   m_learnState[source] = inPort;
 }
 
@@ -399,7 +407,7 @@ SequencerNetDevice::ForwardUnicast (Ptr<NetDevice> inPort,
   Learn (src, inPort);
   Ptr<NetDevice> outPort = GetLearnedState (dst);
   if (outPort != nullptr && outPort != inPort) {
-      outPort->SendFrom (packet->Copy (), src, dst, protocol);
+    outPort->SendFrom (packet->Copy (), src, dst, protocol);
   } else {
     for (auto iter = m_ports.begin (); iter != m_ports.end (); iter++) {
       Ptr<NetDevice> port = *iter;
