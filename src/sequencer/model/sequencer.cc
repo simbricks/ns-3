@@ -16,7 +16,7 @@
 #include "ns3/simulator.h"
 
 #define NONFRAG_MAGIC 0x20050318
-#define OUMADDR "10.1.0.255"
+#define OUMADDR "10.0.0.255"
 
 namespace ns3 {
 
@@ -369,6 +369,7 @@ SequencerNetDevice::ForwardBroadcast (Ptr<NetDevice> inPort,
       // Increment sequence number
       pktptr += sizeof(uint32_t); // FRAG_MAGIC
       pktptr += sizeof(uint32_t); // header data len
+      *(uint16_t *)pktptr = udph->source;
       pktptr += sizeof(uint16_t); // udp src port
       *(uint64_t *)pktptr = m_session_id; // session id
       pktptr += sizeof(uint64_t);
