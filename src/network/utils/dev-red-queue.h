@@ -82,8 +82,8 @@ DevRedQueue<Item>::GetTypeId (void)
           .AddAttribute ("MaxSize", "The max queue size", QueueSizeValue (QueueSize ("100p")),
                          MakeQueueSizeAccessor (&QueueBase::SetMaxSize, &QueueBase::GetMaxSize),
                          MakeQueueSizeChecker ())
-          .AddAttribute ("MinTh", "Minimum length threshold in packets",
-                         DoubleValue (10), MakeDoubleAccessor (&DevRedQueue::m_minTh),
+          .AddAttribute ("MinTh", "Minimum length threshold in Bytes",
+                         DoubleValue (200000), MakeDoubleAccessor (&DevRedQueue::m_minTh),
                          MakeDoubleChecker<double> ())
                          ;
 
@@ -130,8 +130,8 @@ DevRedQueue<Item>::Enqueue (Ptr<Item> item)
 
   ecn = header.GetEcn();
   if (masked == subnet){
-    NS_LOG_LOGIC("Redqueue size: " << QueueBase::GetCurrentSize() << "nPacket: " << QueueBase::GetNPackets());
-    if ((QueueBase::GetNPackets() >= m_minTh) && (ecn != Ipv4Header::ECN_NotECT)){
+    NS_LOG_LOGIC("Redqueue size: " << QueueBase::GetCurrentSize() << " nPacket: " << QueueBase::GetNPackets()  << " dst: " << destination << " source: " << source);
+    if ((QueueBase::GetNBytes() >= m_minTh) && (ecn != Ipv4Header::ECN_NotECT)){
       NS_LOG_LOGIC("set ECN");
       header.SetEcn (Ipv4Header::ECN_CE);
     }
@@ -139,13 +139,14 @@ DevRedQueue<Item>::Enqueue (Ptr<Item> item)
     header.EnableChecksum();
     item->AddHeader (header);
 
-    NS_LOG_LOGIC ("dst: " << destination << "source: " << source << " ECN: " << header.GetEcn());
+    //NS_LOG_LOGIC ("dst: " << destination << " source: " << source << " ECN: " << header.GetEcn());
     //packet is IPv4 packet, send modified
     return DoEnqueue (end (), item);
   
   }
   
   //NS_LOG_LOGIC ("dest: " << destination << "  source: " << source << " ECN: " << ecn);
+  NS_LOG_INFO("ARP");
   // the packet is ARP, send original packet 
   return DoEnqueue (end (), q);
 }

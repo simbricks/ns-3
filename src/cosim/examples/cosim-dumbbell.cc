@@ -61,7 +61,7 @@ main (int argc, char *argv[])
 
   Time linkLatency(MilliSeconds (10));
   DataRate linkRate("10Mb/s");
-  double ecnTh = 2666;
+  double ecnTh = 200000;
 
   CommandLine cmd (__FILE__);
   cmd.AddValue ("LinkLatency", "Propagation delay through link", linkLatency);
@@ -77,7 +77,7 @@ main (int argc, char *argv[])
   //LogComponentEnable("BridgeNetDevice", LOG_LEVEL_ALL);
   //LogComponentEnable("CosimDumbbellExample", LOG_LEVEL_ALL);
   //LogComponentEnable("SimpleChannel", LOG_LEVEL_ALL);
-  //LogComponentEnable("SimpleNetDevice", LOG_LEVEL_ALL);
+  //LogComponentEnable("SimpleNetDevice", LOG_LEVEL_INFO);
   //LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
   //LogComponentEnable ("DropTailQueue", LOG_LEVEL_ALL);
   //LogComponentEnable ("DevRedQueue", LOG_LEVEL_ALL);
