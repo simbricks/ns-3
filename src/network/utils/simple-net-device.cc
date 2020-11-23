@@ -446,6 +446,7 @@ SimpleNetDevice::SendFrom (Ptr<Packet> p, const Address& source, const Address& 
 
   if (m_queue->Enqueue (p))
     {
+      //NS_LOG_INFO("simple-netdev: enqueue true");
       if (m_queue->GetNPackets () == 1 && !TransmitCompleteEvent.IsRunning ())
         {
           p = m_queue->Dequeue ();
@@ -461,8 +462,9 @@ SimpleNetDevice::SendFrom (Ptr<Packet> p, const Address& source, const Address& 
       return true;
     }
 
+  NS_LOG_INFO("simple-netdev: enqueue false");
 
-  m_channel->Send (packet, protocolNumber, to, from, this);
+  //m_channel->Send (packet, protocolNumber, to, from, this);
   return true;
 }
 
