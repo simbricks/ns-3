@@ -137,6 +137,9 @@ int main (int argc, char *argv[])
   double EcnTh = 20000;
   uint32_t mtu = 1500;
 
+  LogComponentEnable ("RedQueueDisc", LOG_LEVEL_ALL);
+  LogComponentEnable ("QueueDisc", LOG_LEVEL_ALL);
+
   CommandLine cmd (__FILE__);
   cmd.AddValue ("tcpTypeId", "ns-3 TCP TypeId", tcpTypeId);
   cmd.AddValue ("flowStartupWindow", "startup time window (TCP staggered starts)", flowStartupWindow);
@@ -147,6 +150,7 @@ int main (int argc, char *argv[])
   cmd.AddValue ("mtu", "Ethernet mtu", mtu);
   cmd.Parse (argc, argv);
 
+  
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", StringValue ("ns3::" + tcpTypeId));
 
   Time startTime = Seconds (0);
@@ -177,19 +181,23 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::RedQueueDisc::MeanPktSize", UintegerValue (mtu));
   // Triumph and Scorpion switches used in DCTCP Paper have 4 MB of buffer
   // If every packet is 1500 bytes, 2666 packets can be stored in 4 MB
-  Config::SetDefault ("ns3::RedQueueDisc::MaxSize", QueueSizeValue (QueueSize ("2666p")));
+  //Config::SetDefault ("ns3::RedQueueDisc::MaxSize", QueueSizeValue (QueueSize ("2666p")));
+  //Config::SetDefault ("ns3::RedQueueDisc::MaxSize", QueueSizeValue (QueueSize ("4MB")));
+  Config::SetDefault ("ns3::RedQueueDisc::MaxSize", QueueSizeValue (QueueSize (QueueSizeUnit::BYTES, 4000000)));
   // DCTCP tracks instantaneous queue length only; so set QW = 1
   Config::SetDefault ("ns3::RedQueueDisc::QW", DoubleValue (1));
   Config::SetDefault ("ns3::RedQueueDisc::MinTh", DoubleValue (20));
-  Config::SetDefault ("ns3::RedQueueDisc::MaxTh", DoubleValue (60));
+  Config::SetDefault ("ns3::RedQueueDisc::MaxTh", DoubleValue (20));
 
   PointToPointHelper pointToPointSR;
-  pointToPointSR.SetDeviceAttribute ("DataRate", StringValue ("100Gbps"));
-  pointToPointSR.SetChannelAttribute ("Delay", StringValue ("0"));
-
+  pointToPointSR.SetDeviceAttribute ("DataRate", StringValue ("10Gbps"));
+  pointToPointSR.SetDeviceAttribute ("Mtu", UintegerValue(mtu));
+  pointToPointSR.SetChannelAttribute ("Delay", StringValue ("500ns"));
+  
   PointToPointHelper pointToPointT;
   pointToPointT.SetDeviceAttribute ("DataRate", StringValue ("10Gbps"));
-  pointToPointT.SetChannelAttribute ("Delay", StringValue ("0"));
+  pointToPointSR.SetDeviceAttribute ("Mtu", UintegerValue(mtu));
+  pointToPointT.SetChannelAttribute ("Delay", StringValue ("500ns"));
 
 
   // Create a total of 5 links.
@@ -218,7 +226,7 @@ int main (int argc, char *argv[])
   // This yields a target (MinTh) queue depth of 60us at 10 Gb/s
   tchRed10.SetRootQueueDisc ("ns3::RedQueueDisc",
                              "LinkBandwidth", StringValue ("10Gbps"),
-                             "LinkDelay", StringValue ("0"),
+                             "LinkDelay", StringValue ("500ns"),
                              "MinTh", DoubleValue (EcnTh),
                              "MaxTh", DoubleValue (EcnTh));
   QueueDiscContainer queueDiscs1 = tchRed10.Install (T1T2);
@@ -268,8 +276,8 @@ int main (int argc, char *argv[])
       OnOffHelper clientHelper1 ("ns3::TcpSocketFactory", Address ());
       clientHelper1.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
       clientHelper1.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-      clientHelper1.SetAttribute ("DataRate", DataRateValue (DataRate ("100Gbps")));
-      clientHelper1.SetAttribute ("PacketSize", UintegerValue (mtu));
+      clientHelper1.SetAttribute ("DataRate", DataRateValue (DataRate ("10Gbps")));
+      clientHelper1.SetAttribute ("PacketSize", UintegerValue (mtu - 52));
 
       ApplicationContainer clientApps1;
       AddressValue remoteAddress (InetSocketAddress (ipR1T1[i].GetAddress (0), port));
@@ -279,10 +287,16 @@ int main (int argc, char *argv[])
       clientApps1.Stop (stopTime);
     }
 
+  std::ostringstream tput;
+  std::ostringstream qlen;
+  tput << "dctcp-modes-tput-" << mtu << "-" << EcnTh << ".dat";
+  qlen << "dctcp-modes-qlen-" << mtu << "-" << EcnTh << ".dat";
+  std::string f_tput = tput.str ();
+  std::string f_qlen = qlen.str ();
 
-  rxS1R1Throughput.open ("dctcp-modes-throughput.dat", std::ios::out);
+  rxS1R1Throughput.open (f_tput, std::ios::out);
   rxS1R1Throughput << "#Time(s) flow thruput(Mb/s) MTU: " << mtu << " K_value: " << EcnTh << std::endl;
-  t1QueueLength.open ("dctcp-modes-t1-length.dat", std::ios::out);
+  t1QueueLength.open (f_qlen, std::ios::out);
   t1QueueLength << "#Time(s) qlen(pkts) qlen(us)" << std::endl;
 
   for (std::size_t i = 0; i < num_pairs; i++)
@@ -293,8 +307,10 @@ int main (int argc, char *argv[])
   Simulator::Schedule (flowStartupWindow + convergenceTime, &InitializeCounters, num_pairs);
   Simulator::Schedule (flowStartupWindow + convergenceTime + measurementWindow, &PrintThroughput, measurementWindow, num_pairs);
   Simulator::Schedule (progressInterval, &PrintProgress, progressInterval);
-  Simulator::Schedule (flowStartupWindow + convergenceTime, &CheckT1QueueSize, queueDiscs1.Get (0));
+  Simulator::Schedule (flowStartupWindow + convergenceTime, &CheckT1QueueSize, queueDiscs1.Get (1));
   Simulator::Stop (stopTime + TimeStep (1));
+
+  //pointToPointT.EnablePcapAll ("modes-pcap");
 
   Simulator::Run ();
 
