@@ -33,8 +33,8 @@
 namespace ns3 {
 
 extern "C" {
-#include <netsim.h>
-#include <cosim_eth_proto.h>
+#include <simbricks/netif/netsim.h>
+#include <simbricks/proto/network.h>
 }
 
 NS_LOG_COMPONENT_DEFINE ("CosimAdapter");
