@@ -33,7 +33,7 @@
 namespace ns3 {
 
 extern "C" {
-#include <simbricks/netif/netsim.h>
+#include <simbricks/netif/netif.h>
 #include <simbricks/proto/network.h>
 }
 
