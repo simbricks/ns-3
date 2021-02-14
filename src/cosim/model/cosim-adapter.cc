@@ -41,7 +41,7 @@ NS_LOG_COMPONENT_DEFINE ("CosimAdapter");
 
 CosimAdapter::CosimAdapter ()
 {
-  m_nsif = new netsim_interface;
+  m_nsif = new SimbricksNetIf;
 }
 
 CosimAdapter::~CosimAdapter ()
@@ -57,9 +57,9 @@ void CosimAdapter::Start ()
   NS_ABORT_MSG_IF (m_uxSocketPath.empty(), "CosimAdapter::Connect: unix socket"
           " path empty");
 
-  ret = netsim_init(m_nsif, m_uxSocketPath.c_str(), &sync);
+  ret = SimbricksNetIfInit(m_nsif, m_uxSocketPath.c_str(), &sync);
 
-  NS_ABORT_MSG_IF (ret != 0, "CosimAdapter::Connect: netsim_init failed");
+  NS_ABORT_MSG_IF (ret != 0, "CosimAdapter::Connect: SimbricksNetIfInit failed");
   NS_ABORT_MSG_IF (m_sync && !sync,
           "CosimAdapter::Connect: request for sync failed");
 
@@ -117,10 +117,10 @@ void CosimAdapter::ReceivedPacket (const void *buf, size_t len)
 volatile union SimbricksProtoNetN2D *CosimAdapter::AllocTx ()
 {
   volatile union SimbricksProtoNetN2D *msg;
-  msg = netsim_n2d_alloc (m_nsif, Simulator::Now ().ToInteger (Time::PS),
+  msg = SimbricksNetIfN2DAlloc (m_nsif, Simulator::Now ().ToInteger (Time::PS),
           m_ethLatency.ToInteger (Time::PS));
   NS_ABORT_MSG_IF (msg == NULL,
-          "CosimAdapter::AllocTx: netsim_n2d_alloc failed");
+          "CosimAdapter::AllocTx: SimbricksNetIfN2DAlloc failed");
   return msg;
 }
 
@@ -129,8 +129,8 @@ bool CosimAdapter::Poll ()
   volatile union SimbricksProtoNetD2N *msg;
   uint8_t ty;
 
-  msg = netsim_d2n_poll (m_nsif, Simulator::Now ().ToInteger (Time::PS));
-  m_nextTime = PicoSeconds (netsim_d2n_timestamp (m_nsif));
+  msg = SimbricksNetIfD2NPoll (m_nsif, Simulator::Now ().ToInteger (Time::PS));
+  m_nextTime = PicoSeconds (SimbricksNetIfD2NTimestamp (m_nsif));
 
   if (!msg)
     return false;
@@ -148,7 +148,7 @@ bool CosimAdapter::Poll ()
       NS_ABORT_MSG ("CosimAdapter::Poll: unsupported message type " << ty);
   }
 
-  netsim_d2n_done (m_nsif, msg);
+  SimbricksNetIfD2NDone (m_nsif, msg);
   return true;
 }
 

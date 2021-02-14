@@ -33,7 +33,7 @@
 
 namespace ns3 {
 
-struct netsim_interface;
+struct SimbricksNetIf;
 union SimbricksProtoNetN2D;
 
 class CosimAdapter
@@ -57,7 +57,7 @@ public:
   bool Transmit (Ptr<const Packet> packet);
 
 private:
-  struct netsim_interface *m_nsif;
+  struct SimbricksNetIf *m_nsif;
   bool m_isConnected;
   RxCallback m_rxCallback;
   Time m_nextTime;
