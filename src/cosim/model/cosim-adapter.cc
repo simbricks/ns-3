@@ -83,8 +83,8 @@ void CosimAdapter::SetReceiveCallback (RxCallback cb)
 
 bool CosimAdapter::Transmit (Ptr<const Packet> packet)
 {
-  volatile union cosim_eth_proto_n2d *msg;
-  volatile struct cosim_eth_proto_n2d_recv *recv;
+  volatile union SimbricksProtoNetN2D *msg;
+  volatile struct SimbricksProtoNetN2DRecv *recv;
 
   /*NS_ABORT_MSG_IF (packet->GetSize () > 2048,
           "CosimAdapter::Transmit: packet too large");*/
@@ -95,7 +95,8 @@ bool CosimAdapter::Transmit (Ptr<const Packet> packet)
   recv->port = 0;
   packet->CopyData ((uint8_t *) recv->data, recv->len);
 
-  recv->own_type = COSIM_ETH_PROTO_N2D_MSG_RECV | COSIM_ETH_PROTO_N2D_OWN_DEV;
+  recv->own_type = SIMBRICKS_PROTO_NET_N2D_MSG_RECV |
+      SIMBRICKS_PROTO_NET_N2D_OWN_DEV;
 
   if (m_sync) {
     Simulator::Cancel (m_syncTxEvent);
@@ -113,9 +114,9 @@ void CosimAdapter::ReceivedPacket (const void *buf, size_t len)
     m_rxCallback (packet);
 }
 
-volatile union cosim_eth_proto_n2d *CosimAdapter::AllocTx ()
+volatile union SimbricksProtoNetN2D *CosimAdapter::AllocTx ()
 {
-  volatile union cosim_eth_proto_n2d *msg;
+  volatile union SimbricksProtoNetN2D *msg;
   msg = netsim_n2d_alloc (m_nsif, Simulator::Now ().ToInteger (Time::PS),
           m_ethLatency.ToInteger (Time::PS));
   NS_ABORT_MSG_IF (msg == NULL,
@@ -125,7 +126,7 @@ volatile union cosim_eth_proto_n2d *CosimAdapter::AllocTx ()
 
 bool CosimAdapter::Poll ()
 {
-  volatile union cosim_eth_proto_d2n *msg;
+  volatile union SimbricksProtoNetD2N *msg;
   uint8_t ty;
 
   msg = netsim_d2n_poll (m_nsif, Simulator::Now ().ToInteger (Time::PS));
@@ -134,13 +135,13 @@ bool CosimAdapter::Poll ()
   if (!msg)
     return false;
 
-  ty = msg->dummy.own_type & COSIM_ETH_PROTO_D2N_MSG_MASK;
+  ty = msg->dummy.own_type & SIMBRICKS_PROTO_NET_D2N_MSG_MASK;
   switch (ty) {
-    case COSIM_ETH_PROTO_D2N_MSG_SEND:
+    case SIMBRICKS_PROTO_NET_D2N_MSG_SEND:
       ReceivedPacket ((const void *) msg->send.data, msg->send.len);
       break;
 
-    case COSIM_ETH_PROTO_D2N_MSG_SYNC:
+    case SIMBRICKS_PROTO_NET_D2N_MSG_SYNC:
       break;
 
     default:
@@ -170,9 +171,10 @@ void CosimAdapter::PollEvent ()
 
 void CosimAdapter::SendSyncEvent ()
 {
-  volatile union cosim_eth_proto_n2d *msg = AllocTx ();
+  volatile union SimbricksProtoNetN2D *msg = AllocTx ();
 
-  msg->sync.own_type = COSIM_ETH_PROTO_N2D_MSG_SYNC | COSIM_ETH_PROTO_N2D_OWN_DEV;
+  msg->sync.own_type = SIMBRICKS_PROTO_NET_N2D_MSG_SYNC |
+      SIMBRICKS_PROTO_NET_N2D_OWN_DEV;
 
   m_syncTxEvent = Simulator::Schedule (m_syncDelay, &CosimAdapter::SendSyncEvent, this);
 }

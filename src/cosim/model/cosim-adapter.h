@@ -34,7 +34,7 @@
 namespace ns3 {
 
 struct netsim_interface;
-union cosim_eth_proto_n2d;
+union SimbricksProtoNetN2D;
 
 class CosimAdapter
 {
@@ -65,7 +65,7 @@ private:
   EventId m_pollEvent;
 
   void ReceivedPacket (const void *buf, size_t len);
-  volatile union cosim_eth_proto_n2d *AllocTx ();
+  volatile union SimbricksProtoNetN2D *AllocTx ();
   bool Poll ();
   void PollEvent ();
   void SendSyncEvent ();
