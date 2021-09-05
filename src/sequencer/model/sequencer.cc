@@ -5,6 +5,7 @@
 #include <linux/ip.h>
 #include <linux/udp.h>
 #include <linux/in.h>
+#include <endian.h>
 
 #include "sequencer.h"
 
@@ -368,14 +369,10 @@ SequencerNetDevice::ForwardBroadcast (Ptr<NetDevice> inPort,
       pktptr += sizeof (struct udphdr);
       // Increment sequence number
       pktptr += sizeof(uint32_t); // FRAG_MAGIC
-      pktptr += sizeof(uint32_t); // header data len
-      *(uint16_t *)pktptr = udph->source;
-      pktptr += sizeof(uint16_t); // udp src port
-      *(uint64_t *)pktptr = m_session_id; // session id
-      pktptr += sizeof(uint64_t);
-      pktptr += sizeof(uint32_t); // number of groups
-      pktptr += sizeof(uint32_t); // group ID
-      *(uint64_t *)pktptr = ++m_seqnum; // sequence number
+      pktptr += sizeof(uint16_t); // header data len
+      *(uint16_t *)pktptr = htobe16(m_session_id); // session id
+      pktptr += sizeof(uint16_t);
+      *(uint64_t *)pktptr = htobe64(++m_seqnum); // sequence number
 
       ports = &m_replica_ports;
       pkt_tosend = Create<Packet> (buffer, buf_size);
