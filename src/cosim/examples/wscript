@@ -10,3 +10,10 @@ def build(bld):
     obj = bld.create_ns3_program('cosim-dumbbell-example', ['cosim', 'bridge', 'point-to-point', 'internet'])
     obj.source = 'cosim-dumbbell.cc'
 
+    obj = bld.create_ns3_program('cosim-nicif-example', ['cosim', 'core', 'network'])
+    obj.source = 'NicifTwoHost.cc'
+
+    obj = bld.create_ns3_program('cosim-netif-example', ['cosim', 'core', 'network'])
+    obj.source = 'NetifTwoHost.cc'
+
+

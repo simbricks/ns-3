@@ -19,6 +19,8 @@ def build(bld):
     module.source = [
         'model/cosim.cc',
         'model/cosim-adapter.cc',
+        'model/cosim-adapter-nicif.cc',
+        'model/cosim-nicif.cc',
         'helper/cosim-helper.cc',
         ]
 
@@ -32,6 +34,8 @@ def build(bld):
     headers.source = [
         'model/cosim.h',
         'model/cosim-adapter.h',
+        'model/cosim-adapter-nicif.h',
+        'model/cosim-nicif.h',
         'helper/cosim-helper.h',
         ]
 
