@@ -118,7 +118,7 @@ PacketSocketServer::HandleRead (Ptr<Socket> socket)
         {
           m_pktRx ++;
           m_bytesRx += packet->GetSize ();
-          NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds ()
+          NS_LOG_INFO ("At time " << Simulator::Now ().GetPicoSeconds ()
                        << "s packet sink received "
                        << packet->GetSize () << " bytes from "
                        << PacketSocketAddress::ConvertFrom (from)

@@ -108,7 +108,7 @@ bool CosimAdapter::Transmit (Ptr<const Packet> packet)
 }
 
 void CosimAdapter::ReceivedPacket (const void *buf, size_t len)
-{
+{ 
     Ptr<Packet> packet = Create<Packet> (
             reinterpret_cast<const uint8_t *> (buf), len);
     m_rxCallback (packet);
@@ -131,7 +131,7 @@ bool CosimAdapter::Poll ()
 
   msg = SimbricksNetIfD2NPoll (m_nsif, Simulator::Now ().ToInteger (Time::PS));
   m_nextTime = PicoSeconds (SimbricksNetIfD2NTimestamp (m_nsif));
-
+  
   if (!msg)
     return false;
 

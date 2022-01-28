@@ -215,7 +215,7 @@ void CosimAdapterNicIf::SendSyncEvent ()
   volatile union SimbricksProtoNetD2N *msg = AllocTx ();
 
   msg->sync.own_type = SIMBRICKS_PROTO_NET_D2N_MSG_SYNC |
-      SIMBRICKS_PROTO_NET_D2N_OWN_DEV;
+      SIMBRICKS_PROTO_NET_D2N_OWN_NET;
 
   m_syncTxEvent = Simulator::Schedule (m_syncDelay, &CosimAdapterNicIf::SendSyncEvent, this);
 }
