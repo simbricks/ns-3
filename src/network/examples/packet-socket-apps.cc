@@ -38,6 +38,8 @@ using namespace ns3;
 
 int main (int argc, char *argv[])
 {
+  Time::SetResolution (Time::Unit::PS);
+  
   bool verbose = false;
 
   CommandLine cmd (__FILE__);
@@ -86,6 +88,7 @@ int main (int argc, char *argv[])
 
   Ptr<PacketSocketClient> client = CreateObject<PacketSocketClient> ();
   client->SetRemote (socketAddr);
+  client->SetAttribute("Interval", TimeValue (NanoSeconds (1.0)));
   nodes.Get (0)->AddApplication (client);
 
   Ptr<PacketSocketServer> server = CreateObject<PacketSocketServer> ();
