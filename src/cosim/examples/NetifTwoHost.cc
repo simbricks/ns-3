@@ -57,9 +57,9 @@ int main (int argc, char *argv[]){
     {
         LogComponentEnable ("PacketSocketServer", LOG_LEVEL_ALL);
         LogComponentEnable ("PacketSocketClient", LOG_LEVEL_ALL);
-        LogComponentEnable ("CosimNetDevice", LOG_LEVEL_ALL);
-        LogComponentEnable ("CosimAdapter", LOG_LEVEL_ALL);
-        LogComponentEnable ("CosimNetIfExample", LOG_LEVEL_ALL);
+        //LogComponentEnable ("CosimNetDevice", LOG_LEVEL_ALL);
+        //LogComponentEnable ("CosimAdapter", LOG_LEVEL_ALL);
+        //LogComponentEnable ("CosimNetIfExample", LOG_LEVEL_ALL);
         LogComponentEnableAll(LOG_PREFIX_NODE);
     }
 

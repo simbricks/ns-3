@@ -62,9 +62,9 @@ int main (int argc, char *argv[]){
     {
         LogComponentEnable ("PacketSocketServer", LOG_LEVEL_ALL);
         LogComponentEnable ("PacketSocketClient", LOG_LEVEL_ALL);
-        LogComponentEnable ("CosimNetDeviceNicIf", LOG_LEVEL_ALL);
-        LogComponentEnable ("CosimAdapterNicIf", LOG_LEVEL_ALL);
-        LogComponentEnable ("CosimNicIfExample", LOG_LEVEL_ALL);
+        //LogComponentEnable ("CosimNetDeviceNicIf", LOG_LEVEL_ALL);
+        //LogComponentEnable ("CosimAdapterNicIf", LOG_LEVEL_ALL);
+        //LogComponentEnable ("CosimNicIfExample", LOG_LEVEL_ALL);
         LogComponentEnableAll(LOG_PREFIX_NODE);
     }
 
@@ -111,7 +111,7 @@ int main (int argc, char *argv[]){
     
     Ptr<PacketSocketClient> client = CreateObject<PacketSocketClient> ();
     client->SetRemote (socketAddr);
-    client->SetAttribute("Interval", TimeValue (NanoSeconds (1.0)));
+    client->SetAttribute("Interval", TimeValue (MicroSeconds (1.0)));
     client->SetAttribute("MaxPackets", UintegerValue(20));
     nodes.Get (0)->AddApplication (client);
 
