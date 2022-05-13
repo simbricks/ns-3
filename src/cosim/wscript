@@ -4,10 +4,10 @@
 #     pass
 
 def configure(conf):
-    conf.env['ENABLE_COSIM'] = conf.check_nonfatal(header_name='simbricks/proto/network.h')
+    conf.env['ENABLE_COSIM'] = conf.check_nonfatal(header_name='simbricks/network/proto.h')
     conf.report_optional_feature('Cosim', 'Cosim Ethernet Connector',
                                  conf.env['ENABLE_COSIM'],
-                                 '<simbricks/proto/network.h> include not detected')
+                                 '<simbricks/network/proto.h> include not detected')
     if not conf.env['ENABLE_COSIM']:
         conf.env['MODULES_NOT_BUILT'].append('cosim')
 
