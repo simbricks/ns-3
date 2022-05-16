@@ -4,7 +4,7 @@ if [ "$COSIM_PATH" = "" ] ; then
 fi
 
 export CPPFLAGS="-I$COSIM_PATH/lib"
-export LDFLAGS="-L$COSIM_PATH/lib/simbricks/netif/ -lnetif_common -L$COSIM_PATH/lib/simbricks/nicif/ -lnicif_common"
+export LDFLAGS="-L$COSIM_PATH/lib/simbricks/nicif/ -lnicif_common -L$COSIM_PATH/lib/simbricks/network/ -lnetwork -L$COSIM_PATH/lib/simbricks/base/ -lbase"
 if [ "$1" = "configure" ] ; then
   ./waf configure --enable-examples
 fi
