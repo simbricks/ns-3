@@ -29,13 +29,13 @@
 #include "ns3/simulator.h"
 #include "ns3/nstime.h"
 
+#include <simbricks/base/cxxatomicfix.h>
+extern "C" {
+#include <simbricks/network/if.h>
+#include <simbricks/network/proto.h>
+}
 
 namespace ns3 {
-
-extern "C" {
-#include <simbricks/netif/netif.h>
-#include <simbricks/proto/network.h>
-}
 
 NS_LOG_COMPONENT_DEFINE ("CosimAdapter");
 
@@ -51,19 +51,19 @@ CosimAdapter::~CosimAdapter ()
 
 void CosimAdapter::Start ()
 {
-  int sync = m_sync;
+  int sync = m_bifparam.sync_mode;
   int ret;
 
-  NS_ABORT_MSG_IF (m_uxSocketPath.empty(), "CosimAdapter::Connect: unix socket"
+  NS_ABORT_MSG_IF (m_bifparam.sock_path == NULL, "SimbricksAdapter::Connect: unix socket"
           " path empty");
 
-  ret = SimbricksNetIfInit(m_nsif, m_uxSocketPath.c_str(), &sync);
+  ret = SimbricksNetIfInit(m_nsif, &m_bifparam, m_bifparam.sock_path, &sync);
 
-  NS_ABORT_MSG_IF (ret != 0, "CosimAdapter::Connect: SimbricksNetIfInit failed");
-  NS_ABORT_MSG_IF (m_sync && !sync,
-          "CosimAdapter::Connect: request for sync failed");
+  NS_ABORT_MSG_IF (ret != 0, "SimbricksAdapter::Connect: SimbricksNetIfInit failed");
+  NS_ABORT_MSG_IF (m_bifparam.sync_mode && !sync,
+          "SimbricksAdapter::Connect: request for sync failed");
 
-  if (m_sync)
+  if (m_bifparam.sync_mode)
     m_syncTxEvent = Simulator::ScheduleNow (&CosimAdapter::SendSyncEvent, this);
 
   m_pollEvent = Simulator::ScheduleNow (&CosimAdapter::PollEvent, this);
@@ -71,7 +71,7 @@ void CosimAdapter::Start ()
 
 void CosimAdapter::Stop ()
 {
-  if (m_sync)
+  if (m_bifparam.sync_mode)
     Simulator::Cancel (m_syncTxEvent);
   Simulator::Cancel (m_pollEvent);
 }
@@ -83,24 +83,23 @@ void CosimAdapter::SetReceiveCallback (RxCallback cb)
 
 bool CosimAdapter::Transmit (Ptr<const Packet> packet)
 {
-  volatile union SimbricksProtoNetN2D *msg;
-  volatile struct SimbricksProtoNetN2DRecv *recv;
+  volatile union SimbricksProtoNetMsg *msg;
+  volatile struct SimbricksProtoNetMsgPacket *recv;
 
   /*NS_ABORT_MSG_IF (packet->GetSize () > 2048,
           "CosimAdapter::Transmit: packet too large");*/
 
   msg = AllocTx ();
-  recv = &msg->recv;
+  recv = &msg->packet;
   recv->len = packet->GetSize ();
   recv->port = 0;
   packet->CopyData ((uint8_t *) recv->data, recv->len);
 
-  recv->own_type = SIMBRICKS_PROTO_NET_N2D_MSG_RECV |
-      SIMBRICKS_PROTO_NET_N2D_OWN_DEV;
+  SimbricksNetIfOutSend(m_nsif, msg, SIMBRICKS_PROTO_NET_MSG_PACKET);
 
-  if (m_sync) {
+  if (m_bifparam.sync_mode) {
     Simulator::Cancel (m_syncTxEvent);
-    m_syncTxEvent = Simulator::Schedule (m_syncDelay,
+    m_syncTxEvent = Simulator::Schedule ( PicoSeconds (m_bifparam.sync_interval),
             &CosimAdapter::SendSyncEvent, this);
   }
 
@@ -114,41 +113,42 @@ void CosimAdapter::ReceivedPacket (const void *buf, size_t len)
     m_rxCallback (packet);
 }
 
-volatile union SimbricksProtoNetN2D *CosimAdapter::AllocTx ()
+volatile union SimbricksProtoNetMsg *CosimAdapter::AllocTx ()
 {
-  volatile union SimbricksProtoNetN2D *msg;
-  msg = SimbricksNetIfN2DAlloc (m_nsif, Simulator::Now ().ToInteger (Time::PS),
-          m_ethLatency.ToInteger (Time::PS));
+  volatile union SimbricksProtoNetMsg *msg;
+  msg = SimbricksNetIfOutAlloc (m_nsif, Simulator::Now ().ToInteger (Time::PS));
+
+  //TODO: fix it to wait until alloc success
   NS_ABORT_MSG_IF (msg == NULL,
-          "CosimAdapter::AllocTx: SimbricksNetIfN2DAlloc failed");
+          "SimbricksAdapter::AllocTx: SimbricksNetIfOutAlloc failed");
   return msg;
 }
 
 bool CosimAdapter::Poll ()
 {
-  volatile union SimbricksProtoNetD2N *msg;
+  volatile union SimbricksProtoNetMsg *msg;
   uint8_t ty;
 
-  msg = SimbricksNetIfD2NPoll (m_nsif, Simulator::Now ().ToInteger (Time::PS));
-  m_nextTime = PicoSeconds (SimbricksNetIfD2NTimestamp (m_nsif));
+  msg = SimbricksNetIfInPoll (m_nsif, Simulator::Now ().ToInteger (Time::PS));
+  m_nextTime = PicoSeconds (SimbricksNetIfInTimestamp (m_nsif));
   
   if (!msg)
     return false;
 
-  ty = msg->dummy.own_type & SIMBRICKS_PROTO_NET_D2N_MSG_MASK;
+  ty = SimbricksNetIfInType(m_nsif, msg);
   switch (ty) {
-    case SIMBRICKS_PROTO_NET_D2N_MSG_SEND:
-      ReceivedPacket ((const void *) msg->send.data, msg->send.len);
+    case SIMBRICKS_PROTO_NET_MSG_PACKET:
+      ReceivedPacket ((const void *) msg->packet.data, msg->packet.len);
       break;
 
-    case SIMBRICKS_PROTO_NET_D2N_MSG_SYNC:
+    case SIMBRICKS_PROTO_MSG_TYPE_SYNC:
       break;
 
     default:
       NS_ABORT_MSG ("CosimAdapter::Poll: unsupported message type " << ty);
   }
 
-  SimbricksNetIfD2NDone (m_nsif, msg);
+  SimbricksNetIfInDone (m_nsif, msg);
   return true;
 }
 
@@ -156,7 +156,7 @@ void CosimAdapter::PollEvent ()
 {
   while (Poll ());
 
-  if (m_sync){
+  if (m_bifparam.sync_mode){
     while (m_nextTime <= Simulator::Now ())
       Poll ();
 
@@ -171,12 +171,15 @@ void CosimAdapter::PollEvent ()
 
 void CosimAdapter::SendSyncEvent ()
 {
-  volatile union SimbricksProtoNetN2D *msg = AllocTx ();
+  volatile union SimbricksProtoNetMsg *msg = AllocTx ();
+  NS_ABORT_MSG_IF (msg == NULL,
+          "SimbricksAdapter::AllocTx: SimbricksNetIfOutAlloc failed");
 
-  msg->sync.own_type = SIMBRICKS_PROTO_NET_N2D_MSG_SYNC |
-      SIMBRICKS_PROTO_NET_N2D_OWN_DEV;
+  // msg->sync.own_type = SIMBRICKS_PROTO_NET_N2D_MSG_SYNC |
+  //     SIMBRICKS_PROTO_NET_N2D_OWN_DEV;
+  SimbricksBaseIfOutSend(&m_nsif->base, &msg->base, SIMBRICKS_PROTO_MSG_TYPE_SYNC);
 
-  m_syncTxEvent = Simulator::Schedule (m_syncDelay, &CosimAdapter::SendSyncEvent, this);
+  m_syncTxEvent = Simulator::Schedule ( PicoSeconds (m_bifparam.sync_interval), &CosimAdapter::SendSyncEvent, this);
 }
 
 }

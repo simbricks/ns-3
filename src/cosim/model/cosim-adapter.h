@@ -31,20 +31,19 @@
 #include "ns3/packet.h"
 #include "ns3/event-id.h"
 
+#include <simbricks/base/cxxatomicfix.h>
+extern "C" {
+#include <simbricks/network/if.h>
+#include <simbricks/network/proto.h>
+}
+
 namespace ns3 {
-
-struct SimbricksNetIf;
-union SimbricksProtoNetN2D;
-
 class CosimAdapter
 {
 public:
-  std::string m_uxSocketPath;
-  Time m_syncDelay;
+  struct SimbricksBaseIfParams m_bifparam;
   Time m_pollDelay;
-  Time m_ethLatency;
-  bool m_sync;
-
+  
   CosimAdapter ();
   ~CosimAdapter ();
 
@@ -65,7 +64,7 @@ private:
   EventId m_pollEvent;
 
   void ReceivedPacket (const void *buf, size_t len);
-  volatile union SimbricksProtoNetN2D *AllocTx ();
+  volatile union SimbricksProtoNetMsg *AllocTx ();
   bool Poll ();
   void PollEvent ();
   void SendSyncEvent ();

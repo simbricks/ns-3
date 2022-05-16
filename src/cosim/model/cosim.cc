@@ -29,6 +29,7 @@
 #include "ns3/channel.h"
 #include "ns3/log.h"
 #include "ns3/boolean.h"
+#include "ns3/integer.h"
 #include "ns3/string.h"
 #include "ns3/ethernet-header.h"
 #include "ns3/simulator.h"
@@ -54,7 +55,7 @@ TypeId CosimNetDevice::GetTypeId (void)
                    MakeStringChecker ())
     .AddAttribute ("SyncDelay",
                    "Max delay between outgoing messages before sync is sent",
-                   TimeValue (NanoSeconds (100.)),
+                   TimeValue (NanoSeconds (500.)),
                    MakeTimeAccessor (&CosimNetDevice::m_a_syncDelay),
                    MakeTimeChecker ())
     .AddAttribute ("PollDelay",
@@ -69,9 +70,9 @@ TypeId CosimNetDevice::GetTypeId (void)
                    MakeTimeChecker ())
     .AddAttribute ("Sync",
                    "Request synchronous interaction with device",
-                   BooleanValue (true),
-                   MakeBooleanAccessor (&CosimNetDevice::m_a_sync),
-                   MakeBooleanChecker ())
+                   IntegerValue (1),
+                   MakeIntegerAccessor (&CosimNetDevice::m_a_sync),
+                   MakeIntegerChecker<int32_t> ())
     ;
     return tid;
 }
@@ -89,11 +90,13 @@ CosimNetDevice::~CosimNetDevice ()
 
 void CosimNetDevice::Start ()
 {
-  m_adapter.m_uxSocketPath = m_a_uxSocketPath;
-  m_adapter.m_syncDelay = m_a_syncDelay;
+  SimbricksNetIfDefaultParams(&m_adapter.m_bifparam);
+  m_adapter.m_bifparam.sock_path = m_a_uxSocketPath.c_str();
+
+  m_adapter.m_bifparam.sync_interval = m_a_syncDelay.ToInteger (Time::PS);
   m_adapter.m_pollDelay = m_a_pollDelay;
-  m_adapter.m_ethLatency = m_a_ethLatency;
-  m_adapter.m_sync = m_a_sync;
+  m_adapter.m_bifparam.link_latency = m_a_ethLatency.ToInteger (Time::PS);
+  m_adapter.m_bifparam.sync_mode = (enum SimbricksBaseIfSyncMode)m_a_sync;
   m_adapter.SetReceiveCallback (
       MakeCallback (&CosimNetDevice::AdapterRx, this));
   m_adapter.Start ();
