@@ -31,7 +31,7 @@ int main (int argc, char *argv[]){
     uint64_t syncDelay;
     uint64_t pollDelay;
     uint64_t ethLatency;
-    bool sync;
+    int sync;
 
     bool verbose = false;
 
@@ -57,9 +57,9 @@ int main (int argc, char *argv[]){
     {
         LogComponentEnable ("PacketSocketServer", LOG_LEVEL_ALL);
         LogComponentEnable ("PacketSocketClient", LOG_LEVEL_ALL);
-        //LogComponentEnable ("CosimNetDevice", LOG_LEVEL_ALL);
-        //LogComponentEnable ("CosimAdapter", LOG_LEVEL_ALL);
-        //LogComponentEnable ("CosimNetIfExample", LOG_LEVEL_ALL);
+        LogComponentEnable ("CosimNetDevice", LOG_LEVEL_ALL);
+        LogComponentEnable ("CosimAdapter", LOG_LEVEL_ALL);
+        LogComponentEnable ("CosimNetIfExample", LOG_LEVEL_ALL);
         LogComponentEnableAll(LOG_PREFIX_NODE);
     }
 
@@ -81,7 +81,7 @@ int main (int argc, char *argv[]){
     rxDev->SetAttribute("SyncDelay", TimeValue(PicoSeconds(syncDelay)));
     rxDev->SetAttribute("PollDelay", TimeValue(PicoSeconds(pollDelay)));
     rxDev->SetAttribute("EthLatency", TimeValue(PicoSeconds(ethLatency)));
-    rxDev->SetAttribute("Sync", BooleanValue(sync));
+    rxDev->SetAttribute("Sync", IntegerValue(sync));
 
     nodes.Get (0)->AddDevice (rxDev);
     rxDev->SetNode (nodes.Get (0));
@@ -91,6 +91,7 @@ int main (int argc, char *argv[]){
     Ptr<SimpleNetDevice> txDev;
     PacketSocketAddress socketAddr;
     txDev = CreateObject<SimpleNetDevice> ();
+    socketAddr.SetSingleDevice (txDev->GetIfIndex ());
     Mac48Address dest_address("01:02:03:04:05:06");
     txDev->SetAddress(dest_address);
     socketAddr.SetPhysicalAddress (txDev->GetAddress());

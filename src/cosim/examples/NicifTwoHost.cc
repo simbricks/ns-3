@@ -32,7 +32,7 @@ int main (int argc, char *argv[]){
     uint64_t syncDelay;
     uint64_t pollDelay;
     uint64_t ethLatency;
-    bool sync;
+    int sync;
     bool sync_mode;
 
     bool verbose = false;
@@ -62,8 +62,8 @@ int main (int argc, char *argv[]){
     {
         LogComponentEnable ("PacketSocketServer", LOG_LEVEL_ALL);
         LogComponentEnable ("PacketSocketClient", LOG_LEVEL_ALL);
-        //LogComponentEnable ("CosimNetDeviceNicIf", LOG_LEVEL_ALL);
-        //LogComponentEnable ("CosimAdapterNicIf", LOG_LEVEL_ALL);
+        LogComponentEnable ("CosimNetDeviceNicIf", LOG_LEVEL_ALL);
+        LogComponentEnable ("CosimAdapterNicIf", LOG_LEVEL_ALL);
         //LogComponentEnable ("CosimNicIfExample", LOG_LEVEL_ALL);
         LogComponentEnableAll(LOG_PREFIX_NODE);
     }
@@ -83,11 +83,11 @@ int main (int argc, char *argv[]){
     Ptr<CosimNetDeviceNicIf> txDev;
     txDev = CreateObject<CosimNetDeviceNicIf> ();
     txDev->SetAttribute("UnixSocket", StringValue(uxSocketPath.c_str()));
-    txDev->SetAttribute("Shm", StringValue(shmPath));
+    //txDev->SetAttribute("Shm", StringValue(shmPath));
     txDev->SetAttribute("SyncDelay", TimeValue(PicoSeconds(syncDelay)));
     txDev->SetAttribute("PollDelay", TimeValue(PicoSeconds(pollDelay)));
     txDev->SetAttribute("EthLatency", TimeValue(PicoSeconds(ethLatency)));
-    txDev->SetAttribute("Sync", BooleanValue(sync));
+    txDev->SetAttribute("Sync", IntegerValue(sync));
     txDev->SetAttribute("SyncMode", BooleanValue(sync_mode));
 
     nodes.Get (0)->AddDevice (txDev);
