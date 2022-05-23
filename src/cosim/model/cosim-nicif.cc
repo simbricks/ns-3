@@ -53,14 +53,9 @@ TypeId CosimNetDeviceNicIf::GetTypeId (void)
                    StringValue ("/tmp/cosim-eth"),
                    MakeStringAccessor (&CosimNetDeviceNicIf::m_a_uxSocketPath),
                    MakeStringChecker ())
-    .AddAttribute ("Shm",
-                   "The path to the shared memory",
-                   StringValue ("/tmp/cosim-shm"),
-                   MakeStringAccessor (&CosimNetDeviceNicIf::m_a_shmPath),
-                   MakeStringChecker ())
     .AddAttribute ("SyncDelay",
                    "Max delay between outgoing messages before sync is sent",
-                   TimeValue (NanoSeconds (100.)),
+                   TimeValue (NanoSeconds (500.)),
                    MakeTimeAccessor (&CosimNetDeviceNicIf::m_a_syncDelay),
                    MakeTimeChecker ())
     .AddAttribute ("PollDelay",
@@ -75,9 +70,9 @@ TypeId CosimNetDeviceNicIf::GetTypeId (void)
                    MakeTimeChecker ())
     .AddAttribute ("Sync",
                    "Request synchronous interaction with device",
-                   BooleanValue (true),
-                   MakeBooleanAccessor (&CosimNetDeviceNicIf::m_a_sync),
-                   MakeBooleanChecker ())
+                   IntegerValue (1),
+                   MakeIntegerAccessor (&CosimNetDeviceNicIf::m_a_sync),
+                   MakeIntegerChecker<int32_t> ())
     .AddAttribute ("SyncMode",
                    "Set synchronous mode",
                    BooleanValue (false),
@@ -100,14 +95,17 @@ CosimNetDeviceNicIf::~CosimNetDeviceNicIf ()
 
 void CosimNetDeviceNicIf::Start ()
 {
+  SimbricksNetIfDefaultParams(&m_adapter.m_bifparam);
   
-  m_adapter.m_uxSocketPath = m_a_uxSocketPath;
-  m_adapter.m_shmPath = m_a_shmPath;
-  m_adapter.m_syncDelay = m_a_syncDelay;
+  m_adapter.m_bifparam.sock_path = m_a_uxSocketPath.c_str();
+  m_a_shmPath = m_a_uxSocketPath + "-shm";
+  NS_LOG_INFO (m_a_shmPath);
+
+  m_adapter.m_bifparam.sync_interval = m_a_syncDelay.ToInteger (Time::PS);
   m_adapter.m_pollDelay = m_a_pollDelay;
-  m_adapter.m_ethLatency = m_a_ethLatency;
-  m_adapter.m_sync = m_a_sync;
-  m_adapter.m_sync_mode = m_a_sync_mode;
+  m_adapter.m_bifparam.link_latency = m_a_ethLatency.ToInteger (Time::PS);
+  m_adapter.m_bifparam.sync_mode = (enum SimbricksBaseIfSyncMode)m_a_sync;
+  m_adapter.m_shmPath = m_a_shmPath;
   m_adapter.SetReceiveCallback (
       MakeCallback (&CosimNetDeviceNicIf::AdapterRx, this));
   m_adapter.Start ();

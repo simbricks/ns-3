@@ -31,27 +31,19 @@
 #include "ns3/packet.h"
 #include "ns3/event-id.h"
 
-namespace ns3 {
+#include <simbricks/base/cxxatomicfix.h>
 extern "C" {
 #include <simbricks/nicif/nicif.h>
-#include <simbricks/proto/network.h>
-#include <simbricks/proto/base.h>
+#include <simbricks/network/proto.h>
 }
 
-struct SimbricksNicIf;
-union SimbricksProtoNetD2N;
-
+namespace ns3 {
 class CosimAdapterNicIf
 {
 public:
-  std::string m_uxSocketPath;
+  struct SimbricksBaseIfParams m_bifparam;
   std::string m_shmPath;
-
-  Time m_syncDelay;
   Time m_pollDelay;
-  Time m_ethLatency;
-  bool m_sync;
-  int m_sync_mode;
 
   CosimAdapterNicIf ();
   ~CosimAdapterNicIf ();
@@ -66,8 +58,6 @@ public:
 
 private:
   struct SimbricksNicIf *m_nsif;
-  struct SimbricksNicIfParams nsparams;
-
   bool m_isConnected;
   RxCallback m_rxCallback;
   Time m_nextTime;
@@ -75,13 +65,10 @@ private:
   EventId m_pollEvent;
 
   void ReceivedPacket (const void *buf, size_t len);
-  volatile union SimbricksProtoNetD2N *AllocTx ();
+  volatile union SimbricksProtoNetMsg *AllocTx ();
   bool Poll ();
   void PollEvent ();
   void SendSyncEvent ();
-  void SimbricksNicIfN2DDone(struct SimbricksNicIf *nicif,
-                           volatile union SimbricksProtoNetN2D *msg);
-  void SimbricksNicIfN2DNext(struct SimbricksNicIf *nicif);
 
 };
 

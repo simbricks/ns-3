@@ -90,7 +90,7 @@ private:
   Time m_a_syncDelay;
   Time m_a_pollDelay;
   Time m_a_ethLatency;
-  bool m_a_sync;
+  int m_a_sync;
   bool m_a_sync_mode;
 
 
