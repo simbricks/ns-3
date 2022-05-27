@@ -20,7 +20,7 @@
 #define DEVRED_H
 
 #include "ns3/queue.h"
-#include "ipv4-header.h"
+#include "ns3/ipv4-header.h"
 
 namespace ns3 {
 
