@@ -116,7 +116,9 @@ void CosimAdapter::ReceivedPacket (const void *buf, size_t len)
 volatile union SimbricksProtoNetMsg *CosimAdapter::AllocTx ()
 {
   volatile union SimbricksProtoNetMsg *msg;
-  msg = SimbricksNetIfOutAlloc (m_nsif, Simulator::Now ().ToInteger (Time::PS));
+  do {
+    msg = SimbricksNetIfOutAlloc (m_nsif, Simulator::Now ().ToInteger (Time::PS));
+  } while (!msg);
 
   //TODO: fix it to wait until alloc success
   NS_ABORT_MSG_IF (msg == NULL,
