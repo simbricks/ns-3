@@ -314,29 +314,16 @@ int main (int argc, char *argv[])
   cmd.AddValue ("convergenceTime", "convergence time", convergenceTime);
   cmd.AddValue ("measurementWindow", "measurement window", measurementWindow);
   cmd.AddValue ("enableSwitchEcn", "enable ECN at switches", enableSwitchEcn);
-  cmd.AddValue ("LinkLatency", "Propagation delay through link", linkLatency);
+  //cmd.AddValue ("LinkLatency", "Propagation delay through link", linkLatency);
+  cmd.AddValue ("LinkLatency", "RTT between server and client, which is propagation delay through link times 6", linkLatency);
   cmd.AddValue ("EcnTh", "K value at switches", EcnTh);
   cmd.AddValue ("mtu", "Ethernet mtu", mtu);
   
   cmd.Parse (argc, argv);
 
-  int lat = linkLatency.ToInteger (Time::NS);
-  int rtt;
-  if (lat == 167){
-    rtt = 1;
-  }
-  else if(lat == 1670){
-    rtt = 10;
-  }
-  else if(lat == 16000){
-    rtt = 100;
-  }
-  else if(lat == 33000){
-    rtt = 200;
-  }
-  else{
-    exit(0);
-  }
+  int rtt = linkLatency.ToInteger (Time::NS) / 1000;
+  linkLatency = linkLatency / 6;
+
 
   Config::SetDefault ("ns3::TcpL4Protocol::SocketType", StringValue ("ns3::" + tcpTypeId));
 
