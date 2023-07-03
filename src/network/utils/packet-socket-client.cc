@@ -171,7 +171,7 @@ PacketSocketClient::Send()
         m_txTrace(p, m_peerAddress);
         NS_LOG_INFO("TraceDelay TX " << m_size << " bytes to " << peerAddressStringStream.str()
                                      << " Uid: " << p->GetUid()
-                                     << " Time: " << (Simulator::Now()).GetSeconds());
+                                     << " Time: " << (Simulator::Now()).GetPicoSeconds());
     }
     else
     {

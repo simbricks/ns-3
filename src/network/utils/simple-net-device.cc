@@ -462,6 +462,7 @@ SimpleNetDevice::SendFrom(Ptr<Packet> p,
 
     if (m_queue->Enqueue(p))
     {
+        //NS_LOG_INFO("simple-netdev: enqueue true");
         if (m_queue->GetNPackets() == 1 && !FinishTransmissionEvent.IsRunning())
         {
             StartTransmission();
@@ -469,6 +470,7 @@ SimpleNetDevice::SendFrom(Ptr<Packet> p,
         return true;
     }
 
+    NS_LOG_INFO("simple-netdev: enqueue false");
     return false;
 }
 

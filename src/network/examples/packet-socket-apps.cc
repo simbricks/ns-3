@@ -37,6 +37,8 @@ using namespace ns3;
 int
 main(int argc, char* argv[])
 {
+    Time::SetResolution (Time::Unit::PS);
+
     bool verbose = false;
 
     CommandLine cmd(__FILE__);
@@ -47,7 +49,7 @@ main(int argc, char* argv[])
     {
         LogComponentEnable("PacketSocketServer", LOG_LEVEL_ALL);
         LogComponentEnable("PacketSocketClient", LOG_LEVEL_ALL);
-        LogComponentEnable("SimpleNetDevice", LOG_LEVEL_ALL);
+        //LogComponentEnable("SimpleNetDevice", LOG_LEVEL_ALL);
     }
 
     NodeContainer nodes;
@@ -69,6 +71,7 @@ main(int argc, char* argv[])
     nodes.Get(1)->AddDevice(rxDev);
 
     Ptr<SimpleChannel> channel = CreateObject<SimpleChannel>();
+    channel->SetAttribute("Delay", TimeValue(NanoSeconds(500)));
     txDev->SetChannel(channel);
     rxDev->SetChannel(channel);
     txDev->SetNode(nodes.Get(0));
@@ -84,6 +87,8 @@ main(int argc, char* argv[])
 
     Ptr<PacketSocketClient> client = CreateObject<PacketSocketClient>();
     client->SetRemote(socketAddr);
+    client->SetAttribute("Interval", TimeValue (MicroSeconds (1.0)));
+    client->SetAttribute("MaxPackets", UintegerValue(20));
     nodes.Get(0)->AddApplication(client);
 
     Ptr<PacketSocketServer> server = CreateObject<PacketSocketServer>();

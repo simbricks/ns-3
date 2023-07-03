@@ -376,7 +376,8 @@ RedQueueDisc::DoEnqueue(Ptr<QueueDiscItem> item)
     m_countBytes += item->GetSize();
 
     uint32_t dropType = DTYPE_NONE;
-    if (m_qAvg >= m_minTh && nQueued > 1)
+    //if (m_qAvg >= m_minTh && nQueued > 1)
+    if (m_qAvg >= m_minTh)
     {
         if ((!m_isGentle && m_qAvg >= m_maxTh) || (m_isGentle && m_qAvg >= 2 * m_maxTh))
         {
@@ -477,7 +478,7 @@ RedQueueDisc::InitializeParams()
         m_fengStatus = Above;
     }
 
-    if (m_minTh == 0 && m_maxTh == 0)
+    /*if (m_minTh == 0 && m_maxTh == 0)
     {
         m_minTh = 5.0;
 
@@ -498,6 +499,7 @@ RedQueueDisc::InitializeParams()
         // http://www.icir.org/floyd/papers/adaptiveRed.pdf]
         m_maxTh = 3 * m_minTh;
     }
+    */
 
     NS_ASSERT(m_minTh <= m_maxTh);
 
