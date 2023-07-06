@@ -112,3 +112,42 @@ build_example(
     ${libapplications}
     ${libtraffic-control}
 )
+
+build_example(
+  NAME dctcp-cwnd
+  SOURCE_FILES dctcp-cwnd.cc
+  LIBRARIES_TO_LINK
+    ${libcore}
+    ${libnetwork}
+    ${libinternet}
+    ${libpoint-to-point}
+    ${libapplications}
+    ${libtraffic-control}
+    ${libred}
+)
+
+build_example(
+  NAME dctcp-cwnd-devred
+  SOURCE_FILES dctcp-cwnd-devred.cc
+  LIBRARIES_TO_LINK
+    ${libcore}
+    ${libnetwork}
+    ${libinternet}
+    ${libpoint-to-point}
+    ${libapplications}
+    ${libtraffic-control}
+    ${libred}
+)
+
+build_example(
+  NAME dctcp-modes
+  SOURCE_FILES dctcp-modes.cc
+  LIBRARIES_TO_LINK
+    ${libcore}
+    ${libnetwork}
+    ${libinternet}
+    ${libpoint-to-point}
+    ${libapplications}
+    ${libtraffic-control}
+    ${libred}
+)
