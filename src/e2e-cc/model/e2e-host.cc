@@ -141,6 +141,16 @@ E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
         m_outerNetDevice->AggregateObject(outerNdqi);
     }
 
+    // Set congestion control algorithm
+    if (auto algo {config.Find("CongestionControl")}; algo)
+    {
+        TypeId tid = TypeId::LookupByName(std::string(*algo));
+        std::stringstream nodeId;
+        nodeId << m_node->GetId();
+        std::string specificNode = "/NodeList/" + nodeId.str() + "/$ns3::TcpL4Protocol/SocketType";
+        Config::Set(specificNode, TypeIdValue(tid));
+    }
+
     SetIpAddress();
 }
 
