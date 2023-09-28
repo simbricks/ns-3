@@ -176,11 +176,13 @@ class E2EConfigParser
     const std::vector<E2EConfig>& GetTopologyArgs();
     const std::vector<E2EConfig>& GetHostArgs();
     const std::vector<E2EConfig>& GetApplicationArgs();
+    const std::vector<E2EConfig>& GetGlobalArgs();
 
   private:
     std::vector<E2EConfig> m_topologies;
     std::vector<E2EConfig> m_hosts;
     std::vector<E2EConfig> m_applications;
+    std::vector<E2EConfig> m_globals;
 
     static bool AddConfig(std::vector<E2EConfig> *configs, const std::string &args);
 };

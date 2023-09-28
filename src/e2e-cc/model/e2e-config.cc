@@ -146,11 +146,14 @@ E2EConfigParser::ParseArguments(int argc, char *argv[])
     cmd.AddValue("Host", "Add a host to the simulation", MakeBoundCallback(AddConfig, &m_hosts));
     cmd.AddValue("App", "Add an application to the simulation",
         MakeBoundCallback(AddConfig, &m_applications));
+    cmd.AddValue("Global", "Add global options", MakeBoundCallback(AddConfig, &m_globals));
 
     cmd.Parse(argc, argv);
 
     NS_ABORT_MSG_IF(m_topologies.size() > 1,
         "Currently only one topology is supported per experiment");
+
+    NS_ABORT_MSG_IF(m_globals.size() > 1, "Global options should be given only once");
 }
 
 const std::vector<E2EConfig>&
@@ -169,6 +172,12 @@ const std::vector<E2EConfig>&
 E2EConfigParser::GetApplicationArgs()
 {
     return m_applications;
+}
+
+const std::vector<E2EConfig>&
+E2EConfigParser::GetGlobalArgs()
+{
+    return m_globals;
 }
 
 bool
