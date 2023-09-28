@@ -24,6 +24,15 @@ main(int argc, char* argv[])
     E2EConfigParser configParser {};
     configParser.ParseArguments(argc, argv);
 
+    if (configParser.GetGlobalArgs().size() == 1)
+    {
+        auto& globalConfig = configParser.GetGlobalArgs()[0];
+        if (auto stopTime {globalConfig.Find("StopTime")}; stopTime)
+        {
+            Simulator::Stop(Time(std::string(*stopTime)));
+        }
+    }
+
     E2EConfig rootConfig("");
     E2EComponent root(rootConfig);
 
