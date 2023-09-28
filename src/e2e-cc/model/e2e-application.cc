@@ -40,6 +40,9 @@ E2EApplication::E2EApplication(const E2EConfig& config) : E2EComponent(config)
     NS_ABORT_MSG_IF(GetIdPath().size() != 3,
         "Application '" << GetId() << "' has invalid path length of " << GetIdPath().size());
     NS_ABORT_MSG_IF(GetType().size() == 0, "Application '" << GetId() << "' has no type");
+
+    config.SetFactoryIfContained<TimeValue, Time>(m_factory, "StartTime", "StartTime");
+    config.SetFactoryIfContained<TimeValue, Time>(m_factory, "StopTime", "StopTime");
 }
 
 Ptr<E2EApplication>
@@ -70,36 +73,36 @@ Ptr<Application> E2EApplication::GetApplication()
 
 E2EPacketSink::E2EPacketSink(const E2EConfig& config) : E2EApplication(config)
 {
-    ObjectFactory factory;
-    factory.SetTypeId("ns3::PacketSink");
-    if (not config.SetFactoryIfContained<StringValue, std::string>(factory, "Protocol", "Protocol"))
+    m_factory.SetTypeId("ns3::PacketSink");
+    if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
+        "Protocol", "Protocol"))
     {
         NS_ABORT_MSG("Packet sink '" << GetId() << "' requires a protocol");
     }
-    if (not config.SetFactoryIfContained<AddressValue, InetSocketAddress>(factory,
+    if (not config.SetFactoryIfContained<AddressValue, InetSocketAddress>(m_factory,
         "Local", "Local"))
     {
         NS_ABORT_MSG("Packet sink '" << GetId() << "' requires a local address");
     }
-    m_application = factory.Create<Application>();
+    m_application = m_factory.Create<Application>();
 }
 
 E2EBulkSender::E2EBulkSender(const E2EConfig& config) : E2EApplication(config)
 {
-    ObjectFactory factory;
-    factory.SetTypeId("ns3::BulkSendApplication");
-    if (not config.SetFactoryIfContained<StringValue, std::string>(factory, "Protocol", "Protocol"))
+    m_factory.SetTypeId("ns3::BulkSendApplication");
+    if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
+        "Protocol", "Protocol"))
     {
         NS_ABORT_MSG("Bulk send application '" << GetId() << "' requires a protocol");
     }
-    if (not config.SetFactoryIfContained<AddressValue, InetSocketAddress>(factory,
+    if (not config.SetFactoryIfContained<AddressValue, InetSocketAddress>(m_factory,
         "Remote", "Remote"))
     {
         NS_ABORT_MSG("Bulk send application '" << GetId() << "' requires a remote address");
     }
-    config.SetFactoryIfContained<UintegerValue, unsigned>(factory, "SendSize", "SendSize");
-    config.SetFactoryIfContained<UintegerValue, unsigned>(factory, "MaxBytes", "MaxBytes");
-    m_application = factory.Create<Application>();
+    config.SetFactoryIfContained<UintegerValue, unsigned>(m_factory, "SendSize", "SendSize");
+    config.SetFactoryIfContained<UintegerValue, unsigned>(m_factory, "MaxBytes", "MaxBytes");
+    m_application = m_factory.Create<Application>();
 }
 
 } // namespace ns3

@@ -45,6 +45,7 @@ class E2EApplication : public E2EComponent
     Ptr<Application> GetApplication();
 
   protected:
+    ObjectFactory m_factory;
     Ptr<Application> m_application;
 
 };
