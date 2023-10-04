@@ -81,6 +81,12 @@ E2EComponent::GetIdPath() const
 }
 
 void
+E2EComponent::AddProbe(const E2EConfig& config)
+{
+    NS_ABORT_MSG("Adding probes to '" << m_id << "' is not supported");
+}
+
+void
 E2EComponent::AddE2EComponent(Ptr<E2EComponent> component)
 {
     if (not m_components.insert({component->GetComponentId(), component}).second)
