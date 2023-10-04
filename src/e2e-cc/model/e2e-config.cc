@@ -146,6 +146,7 @@ E2EConfigParser::ParseArguments(int argc, char *argv[])
     cmd.AddValue("Host", "Add a host to the simulation", MakeBoundCallback(AddConfig, &m_hosts));
     cmd.AddValue("App", "Add an application to the simulation",
         MakeBoundCallback(AddConfig, &m_applications));
+    cmd.AddValue("Probe", "Add a probe to the simulation", MakeBoundCallback(AddConfig, &m_probes));
     cmd.AddValue("Global", "Add global options", MakeBoundCallback(AddConfig, &m_globals));
 
     cmd.Parse(argc, argv);
@@ -172,6 +173,12 @@ const std::vector<E2EConfig>&
 E2EConfigParser::GetApplicationArgs()
 {
     return m_applications;
+}
+
+const std::vector<E2EConfig>&
+E2EConfigParser::GetProbeArgs()
+{
+    return m_probes;
 }
 
 const std::vector<E2EConfig>&

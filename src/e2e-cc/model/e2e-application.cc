@@ -87,6 +87,16 @@ E2EPacketSink::E2EPacketSink(const E2EConfig& config) : E2EApplication(config)
     m_application = m_factory.Create<Application>();
 }
 
+void
+E2EPacketSink::AddProbe(const E2EConfig& config)
+{
+    Ptr<PacketSink> sink = StaticCast<PacketSink>(m_application);
+
+    Ptr<E2EPeriodicSampleProbe<uint32_t>> probe = Create<E2EPeriodicSampleProbe<uint32_t>>(config);
+    sink->TraceConnectWithoutContext("Rx", MakeBoundCallback(TraceRx,
+        E2EPeriodicSampleProbe<uint32_t>::AddValue, probe));
+}
+
 E2EBulkSender::E2EBulkSender(const E2EConfig& config) : E2EApplication(config)
 {
     m_factory.SetTypeId("ns3::BulkSendApplication");
@@ -103,6 +113,20 @@ E2EBulkSender::E2EBulkSender(const E2EConfig& config) : E2EApplication(config)
     config.SetFactoryIfContained<UintegerValue, unsigned>(m_factory, "SendSize", "SendSize");
     config.SetFactoryIfContained<UintegerValue, unsigned>(m_factory, "MaxBytes", "MaxBytes");
     m_application = m_factory.Create<Application>();
+}
+
+void
+E2EBulkSender::AddProbe(const E2EConfig& config)
+{
+    Ptr<BulkSendApplication> sender = StaticCast<BulkSendApplication>(m_application);
+
+    TimeValue startTime;
+    sender->GetAttribute("StartTime", startTime);
+    startTime = startTime.Get() + MilliSeconds(10);
+
+    Ptr<E2EPeriodicSampleProbe<uint32_t>> probe = Create<E2EPeriodicSampleProbe<uint32_t>>(config);
+    Simulator::Schedule(Seconds(0), ConnectTraceToSocket<BulkSendApplication, uint32_t>, sender,
+        "RTT", probe, E2EPeriodicSampleProbe<uint32_t>::UpdateValue);
 }
 
 } // namespace ns3

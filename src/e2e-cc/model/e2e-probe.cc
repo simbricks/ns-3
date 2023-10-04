@@ -23,50 +23,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef E2E_APPLICATION_H
-#define E2E_APPLICATION_H
-
-#include "e2e-component.h"
 #include "e2e-probe.h"
+#include "e2e-application.h"
 
-#include "ns3/network-module.h"
+#include "ns3/applications-module.h"
 
 namespace ns3
 {
 
-/* ... */
+NS_LOG_COMPONENT_DEFINE("E2EProbe");
 
-class E2EApplication : public E2EComponent
+E2EProbe::E2EProbe(const E2EConfig& config) : E2EComponent(config)
 {
-  public:
-    E2EApplication(const E2EConfig& config);
+    NS_ABORT_MSG_IF(GetId().size() == 0, "Probe has no id");
+    NS_ABORT_MSG_IF(GetType().size() == 0, "Probe '" << GetId() << "' has no type");
+}
 
-    static Ptr<E2EApplication> CreateApplication(const E2EConfig& config);
-
-    Ptr<Application> GetApplication();
-
-  protected:
-    ObjectFactory m_factory;
-    Ptr<Application> m_application;
-
-};
-
-class E2EPacketSink : public E2EApplication
+void
+TraceRx(void func(uint32_t, Ptr<E2EPeriodicSampleProbe<uint32_t>>),
+        Ptr<E2EPeriodicSampleProbe<uint32_t>> probe,
+        Ptr<const Packet> packet,
+        const Address& address)
 {
-  public:
-    E2EPacketSink(const E2EConfig& config);
-
-    void AddProbe(const E2EConfig& config) override;
-};
-
-class E2EBulkSender : public E2EApplication
-{
-  public:
-    E2EBulkSender(const E2EConfig& config);
-
-    void AddProbe(const E2EConfig& config) override;
-};
+    func(packet->GetSize(), probe);
+}
 
 } // namespace ns3
-
-#endif /* E2E_APPLICATION_H */

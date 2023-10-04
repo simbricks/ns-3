@@ -61,6 +61,17 @@ main(int argc, char* argv[])
         (*host)->AddApplication(application);
     }
 
+    for (auto& config : configParser.GetProbeArgs())
+    {
+        auto id = config.Find("Id");
+        NS_ABORT_MSG_UNLESS(id, "Probe has no id");
+
+        auto component = root.GetE2EComponentParent<E2EComponent>(*id);
+        NS_ABORT_MSG_UNLESS(component, "Component for probe '" << *id << "' not found");
+
+        (*component)->AddProbe(config);
+    }
+
     Simulator::Run();
     Simulator::Destroy();
     return 0;

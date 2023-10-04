@@ -21,12 +21,14 @@ build_lib(
                  model/e2e-application.cc
                  model/e2e-host.cc
                  model/e2e-topology.cc
+                 model/e2e-probe.cc
                  helper/e2e-cc-helper.cc
     HEADER_FILES model/e2e-config.h
                  model/e2e-component.h
                  model/e2e-application.h
                  model/e2e-host.h
                  model/e2e-topology.h
+                 model/e2e-probe.h
                  helper/e2e-cc-helper.h
     LIBRARIES_TO_LINK ${libcore}
                       ${libsimbricks}

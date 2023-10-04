@@ -44,6 +44,8 @@ class E2EComponent : public SimpleRefCount<E2EComponent>
     const E2EConfig& GetConfig() const;
     const std::vector<std::string_view>& GetIdPath() const;
 
+    virtual void AddProbe(const E2EConfig& config);
+
     void AddE2EComponent(Ptr<E2EComponent> component);
     template<typename T>
     std::optional<Ptr<T>> GetE2EComponent(const std::vector<std::string_view>& idPath);
@@ -99,17 +101,24 @@ E2EComponent::GetE2EComponent(const std::vector<std::string_view>& idPath)
     }
 
     // component should now contain what we are looking for
-    Ptr<T> casted {DynamicCast<T>(component)};
-    if (casted)
+    if constexpr (std::is_same_v<T, E2EComponent>)
     {
-        return casted;
+        return component;
     }
     else
     {
-        //Todo: is it possible to use logging here?
-        //NS_LOG_ERROR("Component found but with different type");
-        std::cerr << "Component found but with different type\n";
-        return {};
+        Ptr<T> casted {DynamicCast<T>(component)};
+        if (casted)
+        {
+            return casted;
+        }
+        else
+        {
+            //Todo: is it possible to use logging here?
+            //NS_LOG_ERROR("Component found but with different type");
+            std::cerr << "Component found but with different type\n";
+            return {};
+        }
     }
 }
 
@@ -155,17 +164,24 @@ E2EComponent::GetE2EComponentParent(const std::vector<std::string_view>& idPath)
     }
 
     // component should now contain what we are looking for
-    Ptr<T> casted {DynamicCast<T>(component)};
-    if (casted)
+    if constexpr (std::is_same_v<T, E2EComponent>)
     {
-        return casted;
+        return component;
     }
     else
     {
-        //Todo: is it possible to use logging here?
-        //NS_LOG_ERROR("Component found but with different type");
-        std::cerr << "Component found but with different type\n";
-        return {};
+        Ptr<T> casted {DynamicCast<T>(component)};
+        if (casted)
+        {
+            return casted;
+        }
+        else
+        {
+            //Todo: is it possible to use logging here?
+            //NS_LOG_ERROR("Component found but with different type");
+            std::cerr << "Component found but with different type\n";
+            return {};
+        }
     }
 }
 
