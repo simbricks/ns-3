@@ -120,13 +120,27 @@ E2EBulkSender::AddProbe(const E2EConfig& config)
 {
     Ptr<BulkSendApplication> sender = StaticCast<BulkSendApplication>(m_application);
 
-    TimeValue startTime;
-    sender->GetAttribute("StartTime", startTime);
-    startTime = startTime.Get() + MilliSeconds(10);
+    std::string_view type;
+    if (auto t {config.Find("Type")}; t)
+    {
+        type = *t;
+    }
+    else
+    {
+        NS_ABORT_MSG("Probe does not have a type");
+    }
 
-    Ptr<E2EPeriodicSampleProbe<uint32_t>> probe = Create<E2EPeriodicSampleProbe<uint32_t>>(config);
-    Simulator::Schedule(Seconds(0), ConnectTraceToSocket<BulkSendApplication, uint32_t>, sender,
-        "RTT", probe, E2EPeriodicSampleProbe<uint32_t>::UpdateValue);
+    TimeValue startTimeV;
+    sender->GetAttribute("StartTime", startTimeV);
+    Time startTime = startTimeV.Get() + MilliSeconds(10);
+
+    if (type == "RTT")
+    {
+        Ptr<E2EPeriodicSampleProbe<Time>> probe =
+            Create<E2EPeriodicSampleProbe<Time>>(config);
+        Simulator::Schedule(startTime, ConnectTraceToSocket<BulkSendApplication, Time>, sender,
+            "RTT", probe, E2EPeriodicSampleProbe<Time>::UpdateValue);
+    }
 }
 
 } // namespace ns3
