@@ -45,8 +45,7 @@ template<typename T>
 class E2EPeriodicSampleProbe : public E2EProbe
 {
   public:
-    E2EPeriodicSampleProbe(const E2EConfig& config) : E2EProbe(config)
-    {}
+    E2EPeriodicSampleProbe(const E2EConfig& config);
 
     void Install(Ptr<Application> application) override {}
 
@@ -60,8 +59,56 @@ class E2EPeriodicSampleProbe : public E2EProbe
         probe->m_value += value;
     }
 
+    void WriteData();
+
     T m_value;
+
+  private:
+    std::ostream* m_output;
+    std::string_view m_unit;
+    Time m_interval;
 };
+
+template <typename T>
+inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config) : E2EProbe(config)
+{
+    Time startTime;
+    m_output = &std::cout;
+    if (auto header {config.Find("Header")}; header)
+    {
+        *m_output << *header;
+    }
+    if (auto unit {config.Find("Unit")}; unit)
+    {
+        m_unit = *unit;
+    }
+    if (auto interval {config.Find("Interval")}; interval)
+    {
+        m_interval = Time(std::string(*interval));
+    }
+    else
+    {
+        m_interval = MilliSeconds(500);
+    }
+    if (auto start {config.Find("Start")}; start)
+    {
+        startTime = Time(std::string(*start));
+    }
+    else
+    {
+        startTime = m_interval;
+    }
+
+    Simulator::Schedule(startTime, &E2EPeriodicSampleProbe<T>::WriteData, this);
+}
+
+template <typename T>
+inline void
+E2EPeriodicSampleProbe<T>::WriteData()
+{
+    *m_output << m_value << m_unit << std::endl;
+    Simulator::Schedule(m_interval, &E2EPeriodicSampleProbe<T>::WriteData, this);
+}
 
 template<typename T>
 void TraceOldNewValue(void func(T value, Ptr<E2EPeriodicSampleProbe<T>> probe),
