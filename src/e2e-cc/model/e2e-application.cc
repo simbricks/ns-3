@@ -92,9 +92,23 @@ E2EPacketSink::AddProbe(const E2EConfig& config)
 {
     Ptr<PacketSink> sink = StaticCast<PacketSink>(m_application);
 
-    Ptr<E2EPeriodicSampleProbe<uint32_t>> probe = Create<E2EPeriodicSampleProbe<uint32_t>>(config);
-    sink->TraceConnectWithoutContext("Rx", MakeBoundCallback(TraceRx,
-        E2EPeriodicSampleProbe<uint32_t>::AddValue, probe));
+    std::string_view type;
+    if (auto t {config.Find("Type")}; t)
+    {
+        type = *t;
+    }
+    else
+    {
+        NS_ABORT_MSG("Probe does not have a type");
+    }
+
+    if (type == "Rx")
+    {
+        Ptr<E2EPeriodicSampleProbe<uint32_t>> probe
+            = Create<E2EPeriodicSampleProbe<uint32_t>>(config);
+        sink->TraceConnectWithoutContext("Rx", MakeBoundCallback(TraceRx,
+            E2EPeriodicSampleProbe<uint32_t>::AddValue, probe));
+    }
 }
 
 E2EBulkSender::E2EBulkSender(const E2EConfig& config) : E2EApplication(config)
@@ -137,9 +151,17 @@ E2EBulkSender::AddProbe(const E2EConfig& config)
     if (type == "RTT")
     {
         Ptr<E2EPeriodicSampleProbe<Time>> probe =
-            Create<E2EPeriodicSampleProbe<Time>>(config);
+            Create<E2EPeriodicSampleProbe<Time>>(config,
+                MakeBoundCallback(TimeWriter, Time::Unit::MS));
         Simulator::Schedule(startTime, ConnectTraceToSocket<BulkSendApplication, Time>, sender,
             "RTT", probe, E2EPeriodicSampleProbe<Time>::UpdateValue);
+    }
+    else if (type == "Cwnd")
+    {
+        Ptr<E2EPeriodicSampleProbe<uint32_t>> probe =
+            Create<E2EPeriodicSampleProbe<uint32_t>>(config);
+        Simulator::Schedule(startTime, ConnectTraceToSocket<BulkSendApplication, uint32_t>, sender,
+            "CongestionWindow", probe, E2EPeriodicSampleProbe<uint32_t>::UpdateValue);
     }
 }
 
