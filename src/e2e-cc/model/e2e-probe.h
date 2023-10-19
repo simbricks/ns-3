@@ -42,10 +42,24 @@ class E2EProbe : public E2EComponent
 };
 
 template<typename T>
+inline void SimpleWriter(std::ostream& output, T value)
+{
+    output << value;
+}
+
+inline void TimeWriter(Time::Unit unit, std::ostream& output, Time value)
+{
+    output << value.ToInteger(unit);
+}
+
+template<typename T>
 class E2EPeriodicSampleProbe : public E2EProbe
 {
   public:
     E2EPeriodicSampleProbe(const E2EConfig& config);
+    E2EPeriodicSampleProbe(const E2EConfig& config, Callback<void, std::ostream&, T> writer);
+
+    ~E2EPeriodicSampleProbe() override;
 
     void Install(Ptr<Application> application) override {}
 
@@ -59,24 +73,39 @@ class E2EPeriodicSampleProbe : public E2EProbe
         probe->m_value += value;
     }
 
-    void WriteData();
+    void WriteLine();
+    void SetWriter(void writer(std::ostream&, T));
 
     T m_value;
 
   private:
     std::ostream* m_output;
+    std::ofstream m_of;
     std::string_view m_unit;
     Time m_interval;
+    Callback<void, std::ostream&, T> m_writeData;
 };
 
 template <typename T>
-inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config) : E2EProbe(config)
+inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config)
+    : E2EPeriodicSampleProbe(config, SimpleWriter<T>)
+{}
+
+template <typename T>
+inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config,
+                                                         Callback<void, std::ostream&, T> writer)
+                                                         : E2EProbe(config), m_writeData{writer}
 {
     Time startTime;
     m_output = &std::cout;
+    if (auto file {config.Find("File")}; file)
+    {
+        m_of = std::ofstream(std::string(*file), std::ios::out);
+        m_output = &m_of;
+    }
     if (auto header {config.Find("Header")}; header)
     {
-        *m_output << *header;
+        *m_output << *header << std::endl;
     }
     if (auto unit {config.Find("Unit")}; unit)
     {
@@ -99,15 +128,33 @@ inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config
         startTime = m_interval;
     }
 
-    Simulator::Schedule(startTime, &E2EPeriodicSampleProbe<T>::WriteData, this);
+    Simulator::Schedule(startTime, &E2EPeriodicSampleProbe<T>::WriteLine, this);
+}
+
+template <typename T>
+inline E2EPeriodicSampleProbe<T>::~E2EPeriodicSampleProbe()
+{
+    if (&m_of == m_output)
+    {
+        m_of.close();
+    }
 }
 
 template <typename T>
 inline void
-E2EPeriodicSampleProbe<T>::WriteData()
+E2EPeriodicSampleProbe<T>::WriteLine()
 {
-    *m_output << m_value << m_unit << std::endl;
-    Simulator::Schedule(m_interval, &E2EPeriodicSampleProbe<T>::WriteData, this);
+    *m_output << Simulator::Now().GetInteger() << ": ";
+    m_writeData(*m_output, m_value);
+    *m_output << m_unit << std::endl;
+    Simulator::Schedule(m_interval, &E2EPeriodicSampleProbe<T>::WriteLine, this);
+}
+
+template <typename T>
+inline void
+E2EPeriodicSampleProbe<T>::SetWriter(void writer(std::ostream&, T))
+{
+    m_writeData = writer;
 }
 
 template<typename T>
