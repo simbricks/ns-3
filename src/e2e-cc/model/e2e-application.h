@@ -39,7 +39,7 @@ namespace ns3
 class E2EApplication : public E2EComponent
 {
   public:
-    E2EApplication(const E2EConfig& config);
+    E2EApplication(const E2EConfig& config, const std::string& type_id);
 
     static Ptr<E2EApplication> CreateApplication(const E2EConfig& config);
 

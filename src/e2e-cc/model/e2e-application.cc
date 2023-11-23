@@ -34,13 +34,15 @@ namespace ns3
 
 NS_LOG_COMPONENT_DEFINE("E2EApplication");
 
-E2EApplication::E2EApplication(const E2EConfig& config) : E2EComponent(config)
+E2EApplication::E2EApplication(const E2EConfig& config, const std::string& type_id)
+    : E2EComponent(config)
 {
     NS_ABORT_MSG_IF(GetId().size() == 0, "Application has no id");
     NS_ABORT_MSG_IF(GetIdPath().size() != 3,
         "Application '" << GetId() << "' has invalid path length of " << GetIdPath().size());
     NS_ABORT_MSG_IF(GetType().size() == 0, "Application '" << GetId() << "' has no type");
 
+    m_factory.SetTypeId(type_id);
     config.SetFactoryIfContained<TimeValue, Time>(m_factory, "StartTime", "StartTime");
     config.SetFactoryIfContained<TimeValue, Time>(m_factory, "StopTime", "StopTime");
 }
@@ -71,9 +73,8 @@ Ptr<Application> E2EApplication::GetApplication()
     return m_application;
 }
 
-E2EPacketSink::E2EPacketSink(const E2EConfig& config) : E2EApplication(config)
+E2EPacketSink::E2EPacketSink(const E2EConfig& config) : E2EApplication(config, "ns3::PacketSink")
 {
-    m_factory.SetTypeId("ns3::PacketSink");
     if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
         "Protocol", "Protocol"))
     {
@@ -111,9 +112,9 @@ E2EPacketSink::AddProbe(const E2EConfig& config)
     }
 }
 
-E2EBulkSender::E2EBulkSender(const E2EConfig& config) : E2EApplication(config)
+E2EBulkSender::E2EBulkSender(const E2EConfig& config)
+    : E2EApplication(config, "ns3::BulkSendApplication")
 {
-    m_factory.SetTypeId("ns3::BulkSendApplication");
     if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
         "Protocol", "Protocol"))
     {
