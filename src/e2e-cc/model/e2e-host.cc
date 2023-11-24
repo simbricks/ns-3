@@ -88,6 +88,8 @@ E2ESimbricksHost::E2ESimbricksHost(const E2EConfig& config) : E2EHost(config)
     config.SetAttrIfContained<TimeValue, Time>(netDevice, "PollDelay", "PollDelay");
     config.SetAttrIfContained<TimeValue, Time>(netDevice, "EthLatency", "EthLatency");
     config.SetAttrIfContained<IntegerValue, int>(netDevice, "Sync", "Sync");
+
+    netDevice->Start();
     
     m_netDevice = netDevice;
 }
