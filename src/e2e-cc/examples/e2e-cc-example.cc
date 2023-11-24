@@ -21,6 +21,8 @@ main(int argc, char* argv[])
     LogComponentEnable("E2EHost", LOG_LEVEL_WARN);
     LogComponentEnable("E2EApplication", LOG_LEVEL_WARN);
 
+    Time::SetResolution (Time::Unit::PS);
+
     E2EConfigParser configParser {};
     configParser.ParseArguments(argc, argv);
 
