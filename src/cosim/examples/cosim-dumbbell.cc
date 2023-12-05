@@ -113,9 +113,9 @@ main (int argc, char *argv[])
   pointToPointSR.SetQueue("ns3::DevRedQueue", "MaxSize", StringValue("2666p"));
   pointToPointSR.SetQueue("ns3::DevRedQueue", "MinTh", DoubleValue (ecnTh));
   pointToPointSR.SetDeviceAttribute ("DataRate", DataRateValue(linkRate));
-  pointToPointSR.SetChannelAttribute ("Delay", TimeValue (linkLatency));
+  //pointToPointSR.SetChannelAttribute ("Delay", TimeValue (linkLatency));
 
-  //ptpChan->SetAttribute ("Delay", TimeValue (linkLatency));
+  ptpChan->SetAttribute ("Delay", TimeValue (linkLatency));
 
   //Ptr<SimpleNetDevice> ptpDevLeft = CreateObject<SimpleNetDevice> ();
   //Ptr<SimpleNetDevice> ptpDevRight = CreateObject<SimpleNetDevice> ();
