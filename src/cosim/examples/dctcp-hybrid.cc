@@ -40,7 +40,8 @@ NS_LOG_COMPONENT_DEFINE ("SplitSimHybridExample");
 
 std::vector<std::string> cosimLeftPaths;
 std::vector<std::string> cosimRightPaths;
-
+std::vector<uint64_t> DummyRecvBytes;
+std::ofstream DummyRecvTput;
 
 class MyApp : public Application
 {
@@ -158,6 +159,42 @@ MyApp::ScheduleTx (void)
     }
 }
 
+void
+TraceS1R1Sink (std::size_t index, Ptr<const Packet> p, const Address& a)
+{
+  DummyRecvBytes[index] += p->GetSize ();
+}
+
+
+void
+InitializeCounters (size_t num_pairs)
+{
+  for (std::size_t i = 0; i < num_pairs; i++)
+    {
+      DummyRecvBytes[i] = 0;
+    }
+
+}
+
+void
+PrintThroughput (Time tputInterval, size_t num_pairs)
+{
+
+  for (std::size_t i = 0; i < num_pairs; i++)
+    {
+      DummyRecvTput << Simulator::Now ().GetSeconds () << "s " << i << " " << (DummyRecvBytes[i] * 8) / 1e6 << std::endl;
+    }
+  InitializeCounters(num_pairs);
+  Simulator::Schedule (tputInterval, &PrintThroughput, tputInterval, num_pairs);
+}
+
+
+void
+PrintProgress (Time interval)
+{
+  NS_LOG_INFO( "Progress to " << std::fixed << std::setprecision (1) << Simulator::Now ().GetSeconds () << " seconds simulation time" << std::endl);
+  Simulator::Schedule (interval, &PrintProgress, interval);
+}
 
 bool AddCosimLeftPort (std::string arg)
 {
@@ -186,10 +223,12 @@ main (int argc, char *argv[])
   std::string tcpTypeId = "TcpDctcp";
   uint32_t mtu = 1500;  
 
-  Time flowStartupWindow = Seconds (0);
-  Time convergenceTime = Seconds (1);
-  Time measurementWindow = Seconds (9);
-
+  Time flowStartupWindow = MilliSeconds (500);
+  Time convergenceTime = MilliSeconds (500);
+  Time measurementWindow = Seconds (8);
+  Time progressInterval = MilliSeconds (500);
+  Time tputInterval = Seconds (1);
+  
   CommandLine cmd (__FILE__);
   cmd.AddValue ("LinkLatency", "Propagation delay through link", linkLatency);
   cmd.AddValue ("LinkRate", "Link bandwidth", linkRate);
@@ -202,11 +241,14 @@ main (int argc, char *argv[])
   cmd.Parse (argc, argv);
 
   int total_num_pairs = dummy_num_pairs + detail_num_pairs;
-  Time startTime = Seconds (0);
-  Time stopTime = flowStartupWindow + convergenceTime + measurementWindow;
+  Time startTime = Seconds (1);
+  Time stopTime = startTime + flowStartupWindow + convergenceTime + measurementWindow;
+  DummyRecvBytes.reserve(dummy_num_pairs);
+  Time TputStartTime = startTime + flowStartupWindow + convergenceTime + tputInterval;
 
-  //LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
-  //LogComponentEnable("BridgeNetDevice", LOG_LEVEL_ALL);
+  LogComponentEnable("SplitSimHybridExample", LOG_LEVEL_ALL);
+  // LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
+  // LogComponentEnable("BridgeNetDevice", LOG_LEVEL_ALL);
   //LogComponentEnable("CosimDumbbellExample", LOG_LEVEL_ALL);
   //LogComponentEnable("SimpleChannel", LOG_LEVEL_ALL);
   //LogComponentEnable("SimpleNetDevice", LOG_LEVEL_INFO);
@@ -244,6 +286,7 @@ main (int argc, char *argv[])
 
   NS_LOG_INFO ("Create simple channel link between the two");
   Ptr<SimpleChannel> ptpChan = CreateObject<SimpleChannel> ();
+  ptpChan->SetAttribute ("Delay", TimeValue (linkLatency));
 
   SimpleNetDeviceHelper pointToPointSR;
   pointToPointSR.SetQueue("ns3::DevRedQueue", "MaxSize", StringValue("2666p"));
@@ -279,6 +322,7 @@ main (int argc, char *argv[])
     // Add left side
     Ptr<Node> left_host_node = DumLeftNode.Get(i);
     Ptr<SimpleChannel> ptpChanL = CreateObject<SimpleChannel> ();
+    ptpChanL->SetAttribute ("Delay", TimeValue (linkLatency));
     pointToPointHost.Install(left_host_node, ptpChanL);
     // add the netdev to bridge port
     bridgeLeft->AddBridgePort(pointToPointHost.Install(nodeLeft, ptpChanL).Get(0));
@@ -286,9 +330,10 @@ main (int argc, char *argv[])
     // Add right side
     Ptr<Node> right_host_node = DumRightNode.Get(i);
     Ptr<SimpleChannel> ptpChanR = CreateObject<SimpleChannel> ();
-    pointToPointHost.Install(right_host_node, ptpChanL);
+    ptpChanR->SetAttribute ("Delay", TimeValue (linkLatency));
+    pointToPointHost.Install(right_host_node, ptpChanR);
     // add the netdev to bridge port
-    bridgeRight->AddBridgePort(pointToPointHost.Install(nodeRight, ptpChanL).Get(0));
+    bridgeRight->AddBridgePort(pointToPointHost.Install(nodeRight, ptpChanR).Get(0));
   }
 
   // Network configurations for ns3 hosts
@@ -300,16 +345,19 @@ main (int argc, char *argv[])
   ipRight.reserve (dummy_num_pairs);
 
   Ipv4AddressHelper ipv4;
-  std::string base_ip  = "192.168.64." + std::to_string(detail_num_pairs); 
-  ipv4.SetBase (base_ip.c_str(), "255.255.255.255");
+  std::string base_ip  = "0.0.0." + std::to_string(detail_num_pairs + 1); 
+  ipv4.SetBase ("192.168.64.0", "255.255.255.0", base_ip.c_str() );
   for ( int i = 0; i < dummy_num_pairs; i++){
-    ipv4.Assign(DumLeftNode.Get(i)->GetDevice(0));
+    Ipv4InterfaceContainer le;
+    le = ipv4.Assign(DumLeftNode.Get(i)->GetDevice(0));
+    NS_LOG_INFO ("Left IP: " << le.GetAddress(0));
   }
   
-  base_ip  = "192.168.64." + std::to_string(detail_num_pairs + total_num_pairs);
-  ipv4.SetBase (base_ip.c_str(), "255.255.255.255");
+  base_ip  = "0.0.0." + std::to_string(detail_num_pairs + 1 + total_num_pairs);
+  ipv4.SetBase ("192.168.64.0", "255.255.255.0", base_ip.c_str());
   for ( int i = 0; i < dummy_num_pairs; i++){
     ipRight.push_back(ipv4.Assign(DumRightNode.Get(i)->GetDevice(0)));
+    NS_LOG_INFO ("Right IP: " << ipRight[i].GetAddress(0));
   }
   
   // Create MyApp to ns3 hosts 
@@ -336,10 +384,23 @@ main (int argc, char *argv[])
       Ptr<MyApp> app = CreateObject<MyApp> ();
       app->Setup (ns3TcpSocket, InetSocketAddress(ipRight[i].GetAddress(0), port), mtu-52, 1000000000, DataRate ("10Gbps"));
       DumLeftNode.Get (i)->AddApplication (app);
-      app->SetStartTime (startTime + i * MilliSeconds(10));
+      app->SetStartTime (startTime);
       app->SetStopTime (stopTime);
 
     }
+
+  std::ostringstream tput;
+  tput << "./out/dctcp-hybr-tput-" << mtu << "-" << ecnTh <<  ".dat";
+
+  DummyRecvTput.open (tput.str(), std::ios::out);
+  DummyRecvTput << "#Time(s) flow thruput(Mb/s) MTU: " << mtu << " K_value: " << ecnTh << std::endl;
+
+  for (std::size_t i = 0; i < dummy_num_pairs; i++) {
+    RightSinks[i]->TraceConnectWithoutContext ("Rx", MakeBoundCallback (&TraceS1R1Sink, i));
+  }
+  Simulator::Schedule (startTime + flowStartupWindow + convergenceTime, &InitializeCounters, dummy_num_pairs);
+  Simulator::Schedule (TputStartTime, &PrintThroughput, tputInterval, dummy_num_pairs);
+  Simulator::Schedule (progressInterval, &PrintProgress, progressInterval);
 
   NS_LOG_INFO ("Create detailed hosts and add them to bridge");
   NS_LOG_INFO("cosim path :" << cosimLeftPaths[0]);
@@ -363,6 +424,7 @@ main (int argc, char *argv[])
   NS_LOG_INFO ("Run Emulation.");
   Simulator::Run ();
 
+  DummyRecvTput.close();
 
   Simulator::Destroy ();
   NS_LOG_INFO ("Done.");
