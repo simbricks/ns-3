@@ -31,33 +31,63 @@
 #include "e2e-component.h"
 
 #include "ns3/network-module.h"
+#include "ns3/bridge-module.h"
 
 namespace ns3
 {
 
 /* ... */
 
-class E2ETopology : public E2EComponent
+class E2ETopologyNode : public E2EComponent
 {
   public:
-    E2ETopology(const E2EConfig& config);
+    E2ETopologyNode(const E2EConfig& config);
 
-    static Ptr<E2ETopology> CreateTopology(const E2EConfig& config);
+    static Ptr<E2ETopologyNode> CreateTopologyNode(const E2EConfig& config);
+
+    Ptr<Node> GetNode();
 
     virtual void AddHost(Ptr<E2EHost> host) = 0;
+    virtual void AddChannel(Ptr<NetDevice> channelDevice) = 0;
+
+  protected:
+    Ptr<Node> m_node;
+    NetDeviceContainer m_hostDevices;
+    NetDeviceContainer m_linkDevices;
 };
 
-class E2EDumbbellTopology : public E2ETopology
+class E2ESwitchNode : public E2ETopologyNode
 {
   public:
-    E2EDumbbellTopology(const E2EConfig& config);
+    E2ESwitchNode(const E2EConfig& config);
 
     void AddHost(Ptr<E2EHost> host) override;
+    void AddChannel(Ptr<NetDevice> channelDevice) override;
 
   private:
-    NodeContainer m_switches;
-    NetDeviceContainer m_switchDevices;
-    NetDeviceContainer m_bottleneckDevices;
+    Ptr<BridgeNetDevice> m_switch;
+};
+
+class E2ETopologyChannel : public E2EComponent
+{
+  public:
+    E2ETopologyChannel(const E2EConfig& config);
+
+    static Ptr<E2ETopologyChannel> CreateTopologyChannel(const E2EConfig& config);
+
+    virtual void Connect(Ptr<E2EComponent> root) = 0;
+};
+
+class E2ESimpleChannel : public E2ETopologyChannel
+{
+  public:
+    E2ESimpleChannel(const E2EConfig& config);
+
+    void Connect(Ptr<E2EComponent> root) override;
+
+  private:
+    SimpleNetDeviceHelper m_channelHelper;
+    NetDeviceContainer m_devices;
 };
 
 } // namespace ns3

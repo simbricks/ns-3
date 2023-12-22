@@ -25,7 +25,6 @@
 
 #include "e2e-topology.h"
 
-#include "ns3/bridge-module.h"
 #include "ns3/core-module.h"
 
 namespace ns3
@@ -33,93 +32,134 @@ namespace ns3
 
 NS_LOG_COMPONENT_DEFINE("E2ETopology");
 
-E2ETopology::E2ETopology(const E2EConfig& config) : E2EComponent(config)
+E2ETopologyNode::E2ETopologyNode(const E2EConfig& config) : E2EComponent(config)
 {
-    NS_ABORT_MSG_IF(GetId().size() == 0, "Topology has no id");
+    NS_ABORT_MSG_IF(GetId().empty(), "Topology node has no id");
     NS_ABORT_MSG_IF(GetIdPath().size() != 1,
-        "Topology '" << GetId() << "' has invalid path length of " << GetIdPath().size());
-    NS_ABORT_MSG_IF(GetType().size() == 0, "Topology '" << GetId() << "' has no type");
+        "Topology node '" << GetId() << "' has invalid path length of " << GetIdPath().size());
+    NS_ABORT_MSG_IF(GetType().empty(), "Topology node '" << GetId() << "' has no type");
+
+    m_node = CreateObject<Node>();
 }
 
-Ptr<E2ETopology>
-E2ETopology::CreateTopology(const E2EConfig& config)
+Ptr<E2ETopologyNode>
+E2ETopologyNode::CreateTopologyNode(const E2EConfig& config)
 {
     auto type_opt {config.Find("Type")};
-    NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Topology has no type");
+    NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Topology node has no type");
     std::string_view type {*type_opt};
 
-    if (type == "Dumbbell")
+    if (type == "Switch")
     {
-        return Create<E2EDumbbellTopology>(config);
+        return Create<E2ESwitchNode>(config);
     }
     else
     {
-        NS_ABORT_MSG("Unkown topology type '" << type << "'");
+        NS_ABORT_MSG("Unkown topology node type '" << type << "'");
     }
 }
 
-E2EDumbbellTopology::E2EDumbbellTopology(const E2EConfig &config) : E2ETopology(config)
+Ptr<Node>
+E2ETopologyNode::GetNode()
 {
-    m_switches.Create(2);
+    return m_node;
+}
 
-    SimpleNetDeviceHelper bottleneckHelper;
+E2ESwitchNode::E2ESwitchNode(const E2EConfig& config) : E2ETopologyNode(config)
+{
+    BridgeHelper bridgeHelper;
+
+    if (auto mtu {config.Find("Mtu")}; mtu)
+    {
+        bridgeHelper.SetDeviceAttribute("Mtu", StringValue(std::string(*mtu)));
+    }
+
+    NetDeviceContainer switchContainer = bridgeHelper.Install(m_node, NetDeviceContainer());
+    m_switch = StaticCast<BridgeNetDevice>(switchContainer.Get(0));
+}
+
+void
+E2ESwitchNode::AddHost(Ptr<E2EHost> host)
+{
+    m_node->AddDevice(host->GetNetDevice());
+    m_switch->AddBridgePort(host->GetNetDevice());
+    m_hostDevices.Add(host->GetNetDevice());
+
+    AddE2EComponent(host);
+}
+
+void
+E2ESwitchNode::AddChannel(Ptr<NetDevice> channelDevice)
+{
+    m_switch->AddBridgePort(channelDevice);
+    m_linkDevices.Add(channelDevice);
+}
+
+E2ETopologyChannel::E2ETopologyChannel(const E2EConfig& config)
+    : E2EComponent(config)
+{
+    NS_ABORT_MSG_IF(GetId().empty(), "Topology channel has no id");
+    NS_ABORT_MSG_IF(GetIdPath().size() != 1,
+        "Topology channel '" << GetId() << "' has invalid path length of " << GetIdPath().size());
+    NS_ABORT_MSG_IF(GetType().empty(), "Topology channel '" << GetId() << "' has no type");
+}
+
+Ptr<E2ETopologyChannel>
+E2ETopologyChannel::CreateTopologyChannel(const E2EConfig& config)
+{
+    auto type_opt {config.Find("Type")};
+    NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Topology channel has no type");
+    std::string_view type {*type_opt};
+
+    if (type == "Simple")
+    {
+        return Create<E2ESimpleChannel>(config);
+    }
+    else
+    {
+        NS_ABORT_MSG("Unkown topology channel type '" << type << "'");
+    }
+}
+
+E2ESimpleChannel::E2ESimpleChannel(const E2EConfig& config)
+    : E2ETopologyChannel(config)
+{
     if (auto opt {config.Find("DataRate")}; opt)
     {
-        bottleneckHelper.SetDeviceAttribute("DataRate", DataRateValue(DataRate(std::string(*opt))));
+        m_channelHelper.SetDeviceAttribute("DataRate", DataRateValue(DataRate(std::string(*opt))));
     }
     if (auto opt {config.Find("QueueSize")}; opt)
     {
-        bottleneckHelper.SetQueue("ns3::DropTailQueue", "MaxSize",
+        m_channelHelper.SetQueue("ns3::DropTailQueue", "MaxSize",
             QueueSizeValue(QueueSize(std::string(*opt))));
     }
     if (auto opt {config.Find("Delay")}; opt)
     {
-        bottleneckHelper.SetChannelAttribute("Delay", TimeValue(Time(std::string(*opt))));
+        m_channelHelper.SetChannelAttribute("Delay", TimeValue(Time(std::string(*opt))));
     }
-    //bottleneckHelper.SetDeviceAttribute ("Mtu", UintegerValue(1500));
-
-    m_bottleneckDevices = bottleneckHelper.Install(m_switches);
-
-    BridgeHelper bridgeHelper;
-    m_switchDevices.Add(bridgeHelper.Install(m_switches.Get(0),
-        NetDeviceContainer(m_bottleneckDevices.Get(0))).Get(0));
-    m_switchDevices.Add(bridgeHelper.Install(m_switches.Get(1),
-        NetDeviceContainer(m_bottleneckDevices.Get(1))).Get(0));
 }
 
-void E2EDumbbellTopology::AddHost(Ptr<E2EHost> host)
+void
+E2ESimpleChannel::Connect(Ptr<E2EComponent> root)
 {
-    auto position {host->GetConfig().Find("NodePosition")};
-    NS_ABORT_MSG_UNLESS(position.has_value(),
-        "No position given for host '" << host->GetId() << "'");
+    auto leftNodeId {m_config.Find("LeftNode")};
+    NS_ABORT_MSG_UNLESS(leftNodeId, "No left node for channel " << GetId() << " given");
+    auto rightNodeId {m_config.Find("RightNode")};
+    NS_ABORT_MSG_UNLESS(rightNodeId, "No right node for channel " << GetId() << " given");
 
-    bool left;
+    auto leftNode {root->GetE2EComponent<E2ETopologyNode>(*leftNodeId)};
+    NS_ABORT_MSG_UNLESS(leftNode,
+        "Left node " << *leftNodeId << " for channel " << GetId() << " not found");
+    auto rightNode {root->GetE2EComponent<E2ETopologyNode>(*rightNodeId)};
+    NS_ABORT_MSG_UNLESS(rightNode,
+        "Right node " << *rightNodeId << " for channel " << GetId() << " not found");
 
-    if (*position == "left")
-    {
-        left = true;
-    }
-    else if (*position == "right")
-    {
-        left = false;
-    }
-    else
-    {
-        NS_ABORT_MSG("Unkown position '" << *position << "' for host '" << host->GetId() << "'");
-    }
-
-    if (left)
-    {
-        m_switches.Get(0)->AddDevice(host->GetNetDevice());
-        StaticCast<BridgeNetDevice>(m_switchDevices.Get(0))->AddBridgePort(host->GetNetDevice());
-    }
-    else
-    {
-        m_switches.Get(1)->AddDevice(host->GetNetDevice());
-        StaticCast<BridgeNetDevice>(m_switchDevices.Get(1))->AddBridgePort(host->GetNetDevice());
-    }
-
-    AddE2EComponent(host);
+    NodeContainer nodes;
+    nodes.Add((*leftNode)->GetNode());
+    nodes.Add((*rightNode)->GetNode());
+    m_devices = m_channelHelper.Install(nodes);
+    (*leftNode)->AddChannel(m_devices.Get(0));
+    (*rightNode)->AddChannel(m_devices.Get(1));
 }
 
 } // namespace ns3

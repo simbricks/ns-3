@@ -36,19 +36,27 @@ main(int argc, char* argv[])
     }
 
     E2EConfig rootConfig("");
-    E2EComponent root(rootConfig);
+    Ptr<E2EComponent> root = Create<E2EComponent>(rootConfig);
 
-    auto& topologyConfigs = configParser.GetTopologyArgs();
-    for (auto& config : topologyConfigs)
+    auto& topologyNodeConfigs = configParser.GetTopologyNodeArgs();
+    for (auto& config : topologyNodeConfigs)
     {
-        root.AddE2EComponent(E2ETopology::CreateTopology(config));
+        root->AddE2EComponent(E2ETopologyNode::CreateTopologyNode(config));
+    }
+
+    auto& topologyChannelConfigs = configParser.GetTopologyChannelArgs();
+    for (auto& config : topologyChannelConfigs)
+    {
+        Ptr<E2ETopologyChannel> channel = E2ETopologyChannel::CreateTopologyChannel(config);
+        channel->Connect(root);
+        root->AddE2EComponent(channel);
     }
 
     auto& hostConfigs = configParser.GetHostArgs();
     for (auto& config : hostConfigs)
     {
         Ptr<E2EHost> host = E2EHost::CreateHost(config);
-        auto topology = root.GetE2EComponentParent<E2ETopology>(host->GetIdPath());
+        auto topology = root->GetE2EComponentParent<E2ETopologyNode>(host->GetIdPath());
         NS_ABORT_MSG_UNLESS(topology, "Topology for node '" << host->GetId() << "' not found");
         (*topology)->AddHost(host);
     }
@@ -57,7 +65,7 @@ main(int argc, char* argv[])
     for (auto& config : applicationConfigs)
     {
         Ptr<E2EApplication> application = E2EApplication::CreateApplication(config);
-        auto host = root.GetE2EComponentParent<E2EHost>(application->GetIdPath());
+        auto host = root->GetE2EComponentParent<E2EHost>(application->GetIdPath());
         NS_ABORT_MSG_UNLESS(host,
             "Host for application '" << application->GetId() << "' not found");
         (*host)->AddApplication(application);
@@ -68,7 +76,7 @@ main(int argc, char* argv[])
         auto id = config.Find("Id");
         NS_ABORT_MSG_UNLESS(id, "Probe has no id");
 
-        auto component = root.GetE2EComponentParent<E2EComponent>(*id);
+        auto component = root->GetE2EComponentParent<E2EComponent>(*id);
         NS_ABORT_MSG_UNLESS(component, "Component for probe '" << *id << "' not found");
 
         (*component)->AddProbe(config);

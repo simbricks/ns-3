@@ -141,8 +141,10 @@ void
 E2EConfigParser::ParseArguments(int argc, char *argv[])
 {
     CommandLine cmd (__FILE__);
-    cmd.AddValue("Topology", "Set the topology of the simulation",
-        MakeBoundCallback(AddConfig, &m_topologies));
+    cmd.AddValue("TopologyNode", "Add a topology node to the simulation",
+        MakeBoundCallback(AddConfig, &m_topologyNodes));
+    cmd.AddValue("TopologyChannel", "Add a topology channel to the simulation",
+        MakeBoundCallback(AddConfig, &m_topologyChannels));
     cmd.AddValue("Host", "Add a host to the simulation", MakeBoundCallback(AddConfig, &m_hosts));
     cmd.AddValue("App", "Add an application to the simulation",
         MakeBoundCallback(AddConfig, &m_applications));
@@ -151,16 +153,19 @@ E2EConfigParser::ParseArguments(int argc, char *argv[])
 
     cmd.Parse(argc, argv);
 
-    NS_ABORT_MSG_IF(m_topologies.size() > 1,
-        "Currently only one topology is supported per experiment");
-
     NS_ABORT_MSG_IF(m_globals.size() > 1, "Global options should be given only once");
 }
 
 const std::vector<E2EConfig>&
-E2EConfigParser::GetTopologyArgs()
+E2EConfigParser::GetTopologyNodeArgs()
 {
-    return m_topologies;
+    return m_topologyNodes;
+}
+
+const std::vector<E2EConfig>&
+E2EConfigParser::GetTopologyChannelArgs()
+{
+    return m_topologyChannels;
 }
 
 const std::vector<E2EConfig>&
