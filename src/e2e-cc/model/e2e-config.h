@@ -173,14 +173,16 @@ class E2EConfigParser
     
     void ParseArguments(int argc, char *argv[]);
 
-    const std::vector<E2EConfig>& GetTopologyArgs();
+    const std::vector<E2EConfig>& GetTopologyNodeArgs();
+    const std::vector<E2EConfig>& GetTopologyChannelArgs();
     const std::vector<E2EConfig>& GetHostArgs();
     const std::vector<E2EConfig>& GetApplicationArgs();
     const std::vector<E2EConfig>& GetProbeArgs();
     const std::vector<E2EConfig>& GetGlobalArgs();
 
   private:
-    std::vector<E2EConfig> m_topologies;
+    std::vector<E2EConfig> m_topologyNodes;
+    std::vector<E2EConfig> m_topologyChannels;
     std::vector<E2EConfig> m_hosts;
     std::vector<E2EConfig> m_applications;
     std::vector<E2EConfig> m_probes;
