@@ -216,6 +216,8 @@ main (int argc, char *argv[])
   Time::SetResolution (Time::Unit::PS);
 
   Time linkLatency(MilliSeconds (10));
+  Time rtt(NanoSeconds (50000)); // 50 us
+
   DataRate linkRate("10Mb/s");
   double ecnTh = 200000;
   int dummy_num_pairs = 1;
@@ -234,6 +236,7 @@ main (int argc, char *argv[])
   cmd.AddValue ("LinkRate", "Link bandwidth", linkRate);
   cmd.AddValue ("EcnTh", "ECN Threshold queue size", ecnTh);
   cmd.AddValue ("mtu", "Ethernet mtu", mtu);
+  cmd.AddValue ("RTT", "RTT between dummy ns3 server and client, which is propagation delay multiplied by #links", rtt);
   cmd.AddValue ("CosimPortLeft", "Add a cosim ethernet port to the bridge",
       MakeCallback (&AddCosimLeftPort));
   cmd.AddValue ("CosimPortRight", "Add a cosim ethernet port to the bridge",
@@ -245,6 +248,8 @@ main (int argc, char *argv[])
   Time stopTime = startTime + flowStartupWindow + convergenceTime + measurementWindow;
   DummyRecvBytes.reserve(dummy_num_pairs);
   Time TputStartTime = startTime + flowStartupWindow + convergenceTime + tputInterval;
+
+  Time dummy_host_linkLatency = rtt / 4;
 
   LogComponentEnable("SplitSimHybridExample", LOG_LEVEL_ALL);
   // LogComponentEnable("CosimNetDevice", LOG_LEVEL_ALL);
@@ -322,7 +327,7 @@ main (int argc, char *argv[])
     // Add left side
     Ptr<Node> left_host_node = DumLeftNode.Get(i);
     Ptr<SimpleChannel> ptpChanL = CreateObject<SimpleChannel> ();
-    ptpChanL->SetAttribute ("Delay", TimeValue (linkLatency));
+    ptpChanL->SetAttribute ("Delay", TimeValue (dummy_host_linkLatency));
     pointToPointHost.Install(left_host_node, ptpChanL);
     // add the netdev to bridge port
     bridgeLeft->AddBridgePort(pointToPointHost.Install(nodeLeft, ptpChanL).Get(0));
@@ -330,7 +335,7 @@ main (int argc, char *argv[])
     // Add right side
     Ptr<Node> right_host_node = DumRightNode.Get(i);
     Ptr<SimpleChannel> ptpChanR = CreateObject<SimpleChannel> ();
-    ptpChanR->SetAttribute ("Delay", TimeValue (linkLatency));
+    ptpChanR->SetAttribute ("Delay", TimeValue (dummy_host_linkLatency));
     pointToPointHost.Install(right_host_node, ptpChanR);
     // add the netdev to bridge port
     bridgeRight->AddBridgePort(pointToPointHost.Install(nodeRight, ptpChanR).Get(0));
@@ -393,7 +398,7 @@ main (int argc, char *argv[])
   tput << "./out/dctcp-hybr-tput-" << mtu << "-" << ecnTh <<  ".dat";
 
   DummyRecvTput.open (tput.str(), std::ios::out);
-  DummyRecvTput << "#Time(s) flow thruput(Mb/s) MTU: " << mtu << " K_value: " << ecnTh << std::endl;
+  DummyRecvTput << "#Time(s) flow thruput(Mb/s) MTU: " << mtu << " K_value: " << ecnTh  << "RTT: " << rtt << std::endl;
 
   for (std::size_t i = 0; i < dummy_num_pairs; i++) {
     RightSinks[i]->TraceConnectWithoutContext ("Rx", MakeBoundCallback (&TraceS1R1Sink, i));
