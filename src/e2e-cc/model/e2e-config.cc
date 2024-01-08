@@ -27,6 +27,8 @@
 
 #include "ns3/core-module.h"
 
+#include <filesystem>
+
 namespace ns3
 {
 
@@ -140,6 +142,7 @@ E2EConfig::SplitArgs()
 void
 E2EConfigParser::ParseArguments(int argc, char *argv[])
 {
+    std::string configFile;
     CommandLine cmd (__FILE__);
     cmd.AddValue("TopologyNode", "Add a topology node to the simulation",
         MakeBoundCallback(AddConfig, &m_topologyNodes));
@@ -150,8 +153,79 @@ E2EConfigParser::ParseArguments(int argc, char *argv[])
         MakeBoundCallback(AddConfig, &m_applications));
     cmd.AddValue("Probe", "Add a probe to the simulation", MakeBoundCallback(AddConfig, &m_probes));
     cmd.AddValue("Global", "Add global options", MakeBoundCallback(AddConfig, &m_globals));
-
+    cmd.AddValue("ConfigFile", "A file that contains command line options", configFile);
     cmd.Parse(argc, argv);
+
+    if (not configFile.empty())
+    {
+        std::filesystem::path p(configFile);
+        //check if file exists
+        NS_ABORT_MSG_UNLESS(std::filesystem::exists(p) and std::filesystem::is_regular_file(p),
+            "Config file " << configFile << " does not exist or is not a file");
+        
+        constexpr int BUFFER_SIZE = 128;
+        char buffer[BUFFER_SIZE];
+        std::vector<std::string> args;
+        // the first argument gets discarded by cmd.Parse since it expects it to be the program name
+        args.push_back("");
+        std::ifstream file(p);
+        std::ostringstream argBuffer;
+        char currentDelimiter;
+        bool quoted = false;
+        bool skipWhitespace = false;
+
+        while (not file.eof())
+        {
+            file.read(buffer, BUFFER_SIZE);
+            int readChars = file.gcount();
+            for (int i = 0; i < readChars; ++i)
+            {
+                if (quoted)
+                {
+                    if (buffer[i] == currentDelimiter)
+                    {
+                        // end quoting and continue with next char
+                        quoted = false;
+                    }
+                    else
+                    {
+                        argBuffer << buffer[i];
+                    }
+                }
+                else if (buffer[i] == ' ' or buffer[i] == '\n')
+                {
+                    if (skipWhitespace)
+                    {
+                        continue;
+                    }
+                    // finish last argument
+                    args.push_back(argBuffer.str());
+                    argBuffer.str("");
+                    skipWhitespace = true;
+                }
+                else if (buffer[i] == '\'' or buffer[i] == '"')
+                {
+                    skipWhitespace = false;
+                    currentDelimiter = buffer[i];
+                    quoted = true;
+                }
+                else
+                {
+                    skipWhitespace = false;
+                    argBuffer << buffer[i];
+                }
+            }
+        }
+
+        // there is possibly one last arg sitting in argBuffer
+        if (auto lastArg = argBuffer.str(); not lastArg.empty())
+        {
+            args.push_back(lastArg);
+        }
+        
+        file.close();
+        cmd.Parse(args);
+    }
 
     NS_ABORT_MSG_IF(m_globals.size() > 1, "Global options should be given only once");
 }
