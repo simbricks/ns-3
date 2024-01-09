@@ -149,6 +149,8 @@ E2EConfigParser::ParseArguments(int argc, char *argv[])
     cmd.AddValue("TopologyChannel", "Add a topology channel to the simulation",
         MakeBoundCallback(AddConfig, &m_topologyChannels));
     cmd.AddValue("Host", "Add a host to the simulation", MakeBoundCallback(AddConfig, &m_hosts));
+    cmd.AddValue("Network", "Add a network to the simulation",
+        MakeBoundCallback(AddConfig, &m_networks));
     cmd.AddValue("App", "Add an application to the simulation",
         MakeBoundCallback(AddConfig, &m_applications));
     cmd.AddValue("Probe", "Add a probe to the simulation", MakeBoundCallback(AddConfig, &m_probes));
@@ -246,6 +248,12 @@ const std::vector<E2EConfig>&
 E2EConfigParser::GetHostArgs()
 {
     return m_hosts;
+}
+
+const std::vector<E2EConfig>&
+E2EConfigParser::GetNetworkArgs()
+{
+    return m_networks;
 }
 
 const std::vector<E2EConfig>&

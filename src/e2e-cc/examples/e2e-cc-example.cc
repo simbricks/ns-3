@@ -61,6 +61,15 @@ main(int argc, char* argv[])
         (*topology)->AddHost(host);
     }
 
+    auto& networkConfigs = configParser.GetNetworkArgs();
+    for (auto& config : networkConfigs)
+    {
+        Ptr<E2ENetwork> network = E2ENetwork::CreateNetwork(config);
+        auto topology = root->GetE2EComponentParent<E2ETopologyNode>(network->GetIdPath());
+        NS_ABORT_MSG_UNLESS(topology, "Topology for node '" << network->GetId() << "' not found");
+        (*topology)->AddNetwork(network);
+    }
+
     auto& applicationConfigs = configParser.GetApplicationArgs();
     for (auto& config : applicationConfigs)
     {

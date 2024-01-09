@@ -27,6 +27,7 @@
 #define E2E_TOPOLOGY_H
 
 #include "e2e-host.h"
+#include "e2e-network.h"
 #include "e2e-config.h"
 #include "e2e-component.h"
 
@@ -48,11 +49,13 @@ class E2ETopologyNode : public E2EComponent
     Ptr<Node> GetNode();
 
     virtual void AddHost(Ptr<E2EHost> host) = 0;
+    virtual void AddNetwork(Ptr<E2ENetwork> network) = 0;
     virtual void AddChannel(Ptr<NetDevice> channelDevice) = 0;
 
   protected:
     Ptr<Node> m_node;
     NetDeviceContainer m_hostDevices;
+    NetDeviceContainer m_networkDevices;
     NetDeviceContainer m_linkDevices;
 };
 
@@ -62,6 +65,7 @@ class E2ESwitchNode : public E2ETopologyNode
     E2ESwitchNode(const E2EConfig& config);
 
     void AddHost(Ptr<E2EHost> host) override;
+    void AddNetwork(Ptr<E2ENetwork> network);
     void AddChannel(Ptr<NetDevice> channelDevice) override;
 
   private:

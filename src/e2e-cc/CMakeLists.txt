@@ -20,6 +20,7 @@ build_lib(
                  model/e2e-component.cc
                  model/e2e-application.cc
                  model/e2e-host.cc
+                 model/e2e-network.cc
                  model/e2e-topology.cc
                  model/e2e-probe.cc
                  helper/e2e-cc-helper.cc
@@ -27,6 +28,7 @@ build_lib(
                  model/e2e-component.h
                  model/e2e-application.h
                  model/e2e-host.h
+                 model/e2e-network.h
                  model/e2e-topology.h
                  model/e2e-probe.h
                  helper/e2e-cc-helper.h
