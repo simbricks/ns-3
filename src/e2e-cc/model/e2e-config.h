@@ -176,6 +176,7 @@ class E2EConfigParser
     const std::vector<E2EConfig>& GetTopologyNodeArgs();
     const std::vector<E2EConfig>& GetTopologyChannelArgs();
     const std::vector<E2EConfig>& GetHostArgs();
+    const std::vector<E2EConfig>& GetNetworkArgs();
     const std::vector<E2EConfig>& GetApplicationArgs();
     const std::vector<E2EConfig>& GetProbeArgs();
     const std::vector<E2EConfig>& GetGlobalArgs();
@@ -184,6 +185,7 @@ class E2EConfigParser
     std::vector<E2EConfig> m_topologyNodes;
     std::vector<E2EConfig> m_topologyChannels;
     std::vector<E2EConfig> m_hosts;
+    std::vector<E2EConfig> m_networks;
     std::vector<E2EConfig> m_applications;
     std::vector<E2EConfig> m_probes;
     std::vector<E2EConfig> m_globals;

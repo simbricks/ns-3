@@ -89,6 +89,16 @@ E2ESwitchNode::AddHost(Ptr<E2EHost> host)
 }
 
 void
+E2ESwitchNode::AddNetwork(Ptr<E2ENetwork> network)
+{
+    m_node->AddDevice(network->GetNetDevice());
+    m_switch->AddBridgePort(network->GetNetDevice());
+    m_networkDevices.Add(network->GetNetDevice());
+
+    AddE2EComponent(network);
+}
+
+void
 E2ESwitchNode::AddChannel(Ptr<NetDevice> channelDevice)
 {
     m_switch->AddBridgePort(channelDevice);
