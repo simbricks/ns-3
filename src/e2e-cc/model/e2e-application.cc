@@ -62,6 +62,10 @@ E2EApplication::CreateApplication(const E2EConfig& config)
     {
         return Create<E2EBulkSender>(config);
     }
+    else if (type == "OnOff")
+    {
+        return Create<E2EOnOffApp>(config);
+    }
     else
     {
         NS_ABORT_MSG("Unkown application type '" << type << "'");
@@ -164,6 +168,27 @@ E2EBulkSender::AddProbe(const E2EConfig& config)
         Simulator::Schedule(startTime, ConnectTraceToSocket<BulkSendApplication, uint32_t>, sender,
             "CongestionWindow", probe, E2EPeriodicSampleProbe<uint32_t>::UpdateValue);
     }
+}
+
+E2EOnOffApp::E2EOnOffApp(const E2EConfig& config) : E2EApplication(config, "ns3::OnOffApplication")
+{
+    if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
+        "Protocol", "Protocol"))
+    {
+        NS_ABORT_MSG("OnOff application '" << GetId() << "' requires a protocol");
+    }
+    if (not config.SetFactoryIfContained<AddressValue, InetSocketAddress>(m_factory,
+        "Remote", "Remote"))
+    {
+        NS_ABORT_MSG("OnOff application '" << GetId() << "' requires a remote address");
+    }
+    config.SetFactoryIfContained<DataRateValue, DataRate>(m_factory, "DataRate", "DataRate");
+    config.SetFactoryIfContained<UintegerValue, unsigned>(m_factory, "MaxBytes", "MaxBytes");
+    config.SetFactoryIfContained<UintegerValue, unsigned>(m_factory, "PacketSize", "PacketSize");
+    config.SetFactoryIfContained<StringValue, std::string>(m_factory, "OnTime", "OnTime");
+    config.SetFactoryIfContained<StringValue, std::string>(m_factory, "OffTime", "OffTime");
+    
+    m_application = m_factory.Create<Application>();
 }
 
 } // namespace ns3
