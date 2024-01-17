@@ -53,6 +53,7 @@ class Adapter
     bool isListen;
     bool rescheduleSyncTx;
     uint64_t pollInterval;
+    bool terminated;
     EventId inEvent;
     EventId outSyncEvent;
     struct SimbricksBaseIf baseIf;
@@ -74,6 +75,7 @@ class Adapter
     virtual void introInReceived(const void *data, size_t len);
     virtual void handleInMsg(volatile union SimbricksProtoBaseMsg *msg);
     virtual void initIfParams(SimbricksBaseIfParams &p);
+    virtual void peerTerminated();
 
   public:
     Adapter();
@@ -107,6 +109,9 @@ class Adapter
 
     volatile union SimbricksProtoBaseMsg *outAlloc() {
         volatile union SimbricksProtoBaseMsg *msg;
+        if (terminated)
+            return nullptr;
+
         do {
             msg = SimbricksBaseIfOutAlloc(&baseIf,
               Simulator::Now ().ToInteger (Time::PS));
@@ -133,6 +138,7 @@ class GenericBaseAdapter : public Adapter
         virtual void introInReceived(const void *data, size_t len) = 0;
         virtual void handleInMsg(volatile TMI *msg) = 0;
         virtual void initIfParams(SimbricksBaseIfParams &p) = 0;
+        virtual void peerTerminated() = 0;
     };
 
   protected:
@@ -153,6 +159,11 @@ class GenericBaseAdapter : public Adapter
     virtual void initIfParams(SimbricksBaseIfParams &p) {
         Adapter::initIfParams(p);
         intf.initIfParams(p);
+    }
+
+    virtual void peerTerminated() {
+      Adapter::peerTerminated();
+      intf.peerTerminated();
     }
 
   public:
