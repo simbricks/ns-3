@@ -18,7 +18,7 @@
 #include "ns3/internet-apps-module.h"
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/ipv4-list-routing-helper.h"
-#include "ns3/simbricks.h"
+#include "ns3/simbricks-netdev.h"
 
 using namespace ns3;
 
@@ -75,8 +75,8 @@ int main (int argc, char *argv[]){
     // give packet socket powers to nodes.
     packetSocket.Install (nodes);
 
-    Ptr<SimbricksNetDevice> rxDev;
-    rxDev = CreateObject<SimbricksNetDevice> ();
+    Ptr<simbricks::SimbricksNetDevice> rxDev;
+    rxDev = CreateObject<simbricks::SimbricksNetDevice> ();
     rxDev->SetAttribute("UnixSocket", StringValue(uxSocketPath.c_str()));
     rxDev->SetAttribute("SyncDelay", TimeValue(PicoSeconds(syncDelay)));
     rxDev->SetAttribute("PollDelay", TimeValue(PicoSeconds(pollDelay)));

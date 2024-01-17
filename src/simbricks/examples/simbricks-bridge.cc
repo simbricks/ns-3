@@ -26,7 +26,7 @@
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/ipv4-list-routing-helper.h"
 #include "ns3/bridge-net-device.h"
-#include "ns3/simbricks.h"
+#include "ns3/simbricks-netdev.h"
 
 using namespace ns3;
 
@@ -78,13 +78,14 @@ main (int argc, char *argv[])
   ipv4->SetUp (interface);
 
   NS_LOG_INFO ("Create SimbricksDevices and add them to bridge");
-  std::vector <Ptr<SimbricksNetDevice>> simbricksDevs;
+  std::vector <Ptr<simbricks::SimbricksNetDevice>> simbricksDevs;
   for (std::string cpp : simbricksPortPaths) {
-    Ptr<SimbricksNetDevice> device = CreateObject<SimbricksNetDevice> ();
+    Ptr<simbricks::SimbricksNetDevice> device =
+      CreateObject<simbricks::SimbricksNetDevice> ();
     device->SetAttribute ("UnixSocket", StringValue (cpp));
     node->AddDevice (device);
     bridge->AddBridgePort (device);
-    device->Start ();
+    device->Start();
   }
 
   NS_LOG_INFO ("Run Emulation.");

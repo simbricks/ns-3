@@ -6,7 +6,7 @@
 #include "ns3/network-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/sequencer-helper.h"
-#include "ns3/simbricks.h"
+#include "ns3/simbricks-netdev.h"
 
 using namespace ns3;
 
@@ -117,46 +117,49 @@ main(int argc, char *argv[])
 
   NS_LOG_INFO("Create Cosims and Bridges");
   for (unsigned i = 0; i < clientNodes.GetN(); i++) {
-    Ptr<SimbricksNetDevice> simbricks = CreateObject<SimbricksNetDevice>();
-    simbricks->SetAttribute("UnixSocket", StringValue(clientPortPaths.at(i)));
+    Ptr<simbricks::SimbricksNetDevice> sbdev =
+        CreateObject<simbricks::SimbricksNetDevice>();
+    sbdev->SetAttribute("UnixSocket", StringValue(clientPortPaths.at(i)));
 
     Ptr<BridgeNetDevice> bridge = CreateObject<BridgeNetDevice>();
     bridge->SetAddress(Mac48Address::Allocate());
 
-    clientNodes.Get(i)->AddDevice(simbricks);
+    clientNodes.Get(i)->AddDevice(sbdev);
     clientNodes.Get(i)->AddDevice(bridge);
     bridge->AddBridgePort(clientDevices.Get(i));
-    bridge->AddBridgePort(simbricks);
+    bridge->AddBridgePort(sbdev);
 
-    simbricks->Start();
+    sbdev->Start();
   }
   for (unsigned i = 0; i < serverNodes.GetN(); i++) {
-    Ptr<SimbricksNetDevice> simbricks = CreateObject<SimbricksNetDevice>();
-    simbricks->SetAttribute("UnixSocket", StringValue(serverPortPaths.at(i)));
+    Ptr<simbricks::SimbricksNetDevice> sbdev =
+        CreateObject<simbricks::SimbricksNetDevice>();
+    sbdev->SetAttribute("UnixSocket", StringValue(serverPortPaths.at(i)));
 
     Ptr<BridgeNetDevice> bridge = CreateObject<BridgeNetDevice>();
     bridge->SetAddress(Mac48Address::Allocate());
 
-    serverNodes.Get(i)->AddDevice(simbricks);
+    serverNodes.Get(i)->AddDevice(sbdev);
     serverNodes.Get(i)->AddDevice(bridge);
     bridge->AddBridgePort(serverDevices.Get(i));
-    bridge->AddBridgePort(simbricks);
+    bridge->AddBridgePort(sbdev);
 
-    simbricks->Start();
+    sbdev->Start();
   }
   for (unsigned i = 0; i < endhostSequencerNodes.GetN(); i++) {
-    Ptr<SimbricksNetDevice> simbricks = CreateObject<SimbricksNetDevice>();
-    simbricks->SetAttribute("UnixSocket", StringValue(endhostSequencerPortPaths.at(i)));
+    Ptr<simbricks::SimbricksNetDevice> sbdev =
+        CreateObject<simbricks::SimbricksNetDevice>();
+    sbdev->SetAttribute("UnixSocket", StringValue(endhostSequencerPortPaths.at(i)));
 
     Ptr<BridgeNetDevice> bridge = CreateObject<BridgeNetDevice>();
     bridge->SetAddress(Mac48Address::Allocate());
 
-    endhostSequencerNodes.Get(i)->AddDevice(simbricks);
+    endhostSequencerNodes.Get(i)->AddDevice(sbdev);
     endhostSequencerNodes.Get(i)->AddDevice(bridge);
     bridge->AddBridgePort(endhostSequencerDevices.Get(i));
-    bridge->AddBridgePort(simbricks);
+    bridge->AddBridgePort(sbdev);
 
-    simbricks->Start();
+    sbdev->Start();
   }
 
   Simulator::Run();

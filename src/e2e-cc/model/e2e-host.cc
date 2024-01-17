@@ -84,7 +84,8 @@ E2EHost::AddApplication(Ptr<E2EApplication> application)
 
 E2ESimbricksHost::E2ESimbricksHost(const E2EConfig& config) : E2EHost(config)
 {
-    Ptr<SimbricksNetDevice> netDevice = CreateObject<SimbricksNetDevice>();
+    Ptr<simbricks::SimbricksNetDevice> netDevice =
+        CreateObject<simbricks::SimbricksNetDevice>();
     if (not config.SetAttrIfContained<StringValue, std::string>(netDevice,
         "UnixSocket", "UnixSocket"))
     {
@@ -96,7 +97,7 @@ E2ESimbricksHost::E2ESimbricksHost(const E2EConfig& config) : E2EHost(config)
     config.SetAttrIfContained<IntegerValue, int>(netDevice, "Sync", "Sync");
 
     netDevice->Start();
-    
+
     m_netDevice = netDevice;
 }
 

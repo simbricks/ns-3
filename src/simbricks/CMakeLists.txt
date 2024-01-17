@@ -10,15 +10,13 @@ link_libraries(
 build_lib(
   LIBNAME simbricks
   SOURCE_FILES
-    model/simbricks.cc
-    model/simbricks-adapter.cc
-    model/simbricks-adapter-nicif.cc
-    model/simbricks-nicif.cc
+    model/simbricks-base.cc
+    model/simbricks-initmgr.cc
+    model/simbricks-netdev.cc
   HEADER_FILES
-    model/simbricks.h
-    model/simbricks-adapter.h
-    model/simbricks-adapter-nicif.h
-    model/simbricks-nicif.h
+    model/simbricks-base.h
+    model/simbricks-initmgr.h
+    model/simbricks-netdev.h
   LIBRARIES_TO_LINK ${libinternet}
                     ${libnetwork}
 )

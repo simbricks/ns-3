@@ -25,7 +25,7 @@
 #include "ns3/internet-apps-module.h"
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/ipv4-list-routing-helper.h"
-#include "ns3/simbricks.h"
+#include "ns3/simbricks-netdev.h"
 
 using namespace ns3;
 
@@ -49,7 +49,8 @@ main (int argc, char *argv[])
   Ptr<Node> node = CreateObject<Node> ();
 
   NS_LOG_INFO ("Create Device");
-  Ptr<SimbricksNetDevice> device = CreateObject<SimbricksNetDevice> ();
+  Ptr<simbricks::SimbricksNetDevice> device =
+      CreateObject<simbricks::SimbricksNetDevice> ();
   device->SetAddress (Mac48Address::Allocate ());
   node->AddDevice (device);
 
@@ -65,7 +66,7 @@ main (int argc, char *argv[])
   ipv4->SetMetric (interface, 1);
   ipv4->SetUp (interface);
 
-  device->Start ();
+  device->Start();
 
   NS_LOG_INFO ("Run Emulation.");
   Simulator::Run ();
