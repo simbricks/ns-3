@@ -31,7 +31,7 @@
 #include "ns3/bridge-net-device.h"
 #include "ns3/simple-channel.h"
 #include "ns3/simple-net-device.h"
-#include "ns3/simbricks.h"
+#include "ns3/simbricks-netdev.h"
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimbricksDumbbellExample");
@@ -149,18 +149,20 @@ main (int argc, char *argv[])
   NS_LOG_INFO("simbricks path :" << simbricksLeftPaths[0]);
   
   for (std::string cpp : simbricksLeftPaths) {
-    Ptr<SimbricksNetDevice> device = CreateObject<SimbricksNetDevice> ();
+    Ptr<simbricks::SimbricksNetDevice> device =
+        CreateObject<simbricks::SimbricksNetDevice> ();
     device->SetAttribute ("UnixSocket", StringValue (cpp));
     nodeLeft->AddDevice (device);
     bridgeLeft->AddBridgePort (device);
-    device->Start ();
+    device->Start();
   }
   for (std::string cpp : simbricksRightPaths) {
-    Ptr<SimbricksNetDevice> device = CreateObject<SimbricksNetDevice> ();
+    Ptr<simbricks::SimbricksNetDevice> device =
+        CreateObject<simbricks::SimbricksNetDevice> ();
     device->SetAttribute ("UnixSocket", StringValue (cpp));
     nodeRight->AddDevice (device);
     bridgeRight->AddBridgePort (device);
-    device->Start ();
+    device->Start();
   }
 
   

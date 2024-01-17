@@ -1,7 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
 /*
- * Copyright 2020 Max Planck Institute for Software Systems
+ * Copyright 2020-2024 Max Planck Institute for Software Systems
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files (the
@@ -23,24 +23,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef SIMBRICKS_NICIF_H
-#define SIMBRICKS_NICIF_H
+#ifndef SIMBRICKS_H
+#define SIMBRICKS_H
 
 #include "ns3/net-device.h"
 #include "ns3/nstime.h"
-#include "simbricks-adapter-nicif.h"
+#include "simbricks-base.h"
 
 namespace ns3 {
+namespace simbricks {
 
-/* ... */
+extern "C" {
+#include <simbricks/base/proto.h>
+#include <simbricks/network/proto.h>
+}
 
-class SimbricksNetDeviceNicIf : public NetDevice
+class SimbricksNetDevice :
+  public NetDevice,
+  public base::GenericBaseAdapter <SimbricksProtoNetMsg,
+                                     SimbricksProtoNetMsg>::Interface
 {
 public:
   static TypeId GetTypeId (void);
 
-  SimbricksNetDeviceNicIf ();
-  virtual ~SimbricksNetDeviceNicIf ();
+  SimbricksNetDevice ();
+  virtual ~SimbricksNetDevice ();
 
   void Start ();
   void Stop ();
@@ -81,8 +88,16 @@ public:
 
   virtual bool SupportsSendFrom (void) const override;
 
+protected:
+  virtual size_t introOutPrepare(void *data, size_t maxlen) override;
+  virtual void introInReceived(const void *data, size_t len) override;
+  virtual void initIfParams(SimbricksBaseIfParams &p) override;
+  virtual void handleInMsg(volatile SimbricksProtoNetMsg *msg) override;
+
 private:
-  SimbricksAdapterNicIf m_adapter;
+  // SimBricks base adapter
+  base::GenericBaseAdapter
+      <SimbricksProtoNetMsg, SimbricksProtoNetMsg> m_adapter;
 
   /* params for adapter */
   std::string m_a_uxSocketPath;
@@ -91,7 +106,8 @@ private:
   Time m_a_pollDelay;
   Time m_a_ethLatency;
   int m_a_sync;
-  bool m_a_sync_mode;
+  bool m_a_listen;
+  bool m_a_reschedule_sync;
 
 
   uint16_t m_mtu;
@@ -106,9 +122,8 @@ private:
   void RxInContext (Ptr<Packet> packet);
 };
 
+} /* namespace simbricks */
+} /* namespace ns3 */
 
-
-}
-
-#endif /* SIMBRICKS_NICIF_H */
+#endif /* SIMBRICKS_H */
 

@@ -18,7 +18,7 @@
 #include "ns3/internet-apps-module.h"
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/ipv4-list-routing-helper.h"
-#include "ns3/simbricks-nicif.h"
+#include "ns3/simbricks-netdev.h"
 
 using namespace ns3;
 
@@ -80,8 +80,8 @@ int main (int argc, char *argv[]){
     // give packet socket powers to nodes.
     packetSocket.Install (nodes);
 
-    Ptr<SimbricksNetDeviceNicIf> txDev;
-    txDev = CreateObject<SimbricksNetDeviceNicIf> ();
+    Ptr<simbricks::SimbricksNetDevice> txDev;
+    txDev = CreateObject<simbricks::SimbricksNetDevice> ();
     txDev->SetAttribute("UnixSocket", StringValue(uxSocketPath.c_str()));
     //txDev->SetAttribute("Shm", StringValue(shmPath));
     txDev->SetAttribute("SyncDelay", TimeValue(PicoSeconds(syncDelay)));
@@ -89,6 +89,7 @@ int main (int argc, char *argv[]){
     txDev->SetAttribute("EthLatency", TimeValue(PicoSeconds(ethLatency)));
     txDev->SetAttribute("Sync", IntegerValue(sync));
     txDev->SetAttribute("SyncMode", BooleanValue(sync_mode));
+    txDev->SetAttribute("Listen", BooleanValue(true));
 
     nodes.Get (0)->AddDevice (txDev);
     txDev->SetNode (nodes.Get (0));
