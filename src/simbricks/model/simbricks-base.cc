@@ -42,7 +42,7 @@ NS_LOG_COMPONENT_DEFINE ("SimbricksBase");
 
 Adapter::Adapter()
     : sync(false), isListen(false), rescheduleSyncTx(false),
-      pollInterval(500000), pool(nullptr)
+      pollInterval(500000), terminated(false), pool(nullptr)
 {
 }
 
@@ -67,6 +67,10 @@ void Adapter::processInEvent()
     /* run what we can */
     while (poll(now));
 
+    /* if peer signaled terminated: no need to re-schedule */
+    if (terminated)
+        return;
+
     if (sync) {
         /* in sychronized mode we might need to wait till we get a message with
          * a timestamp allowing us to proceed */
@@ -74,6 +78,9 @@ void Adapter::processInEvent()
         while ((nextTs = SimbricksBaseIfInTimestamp(&baseIf)) <= now) {
             poll(now);
         }
+
+        if (terminated)
+            return;
 
         inEvent = Simulator::Schedule (PicoSeconds (nextTs - now),
             &Adapter::processInEvent, this);
@@ -97,6 +104,9 @@ void Adapter::processOutSyncEvent()
 
 void Adapter::rescheduleSync()
 {
+    if (terminated)
+        return;
+
     Simulator::Cancel (outSyncEvent);
     uint64_t next_delay = SimbricksBaseIfOutNextSync(&baseIf) - curTick();
     outSyncEvent = Simulator::Schedule (PicoSeconds (next_delay),
@@ -158,6 +168,18 @@ void Adapter::initIfParams(SimbricksBaseIfParams &p)
 {
 }
 
+void Adapter::peerTerminated()
+{
+    NS_LOG_FUNCTION (this);
+
+    terminated = true;
+    if (sync)
+      Simulator::Cancel (outSyncEvent);
+
+    // poll event is currently being handled, and won't be re-scheduled
+}
+
+
 void Adapter::connect(const std::string &sock_path)
 {
     NS_LOG_FUNCTION (this);
@@ -211,7 +233,12 @@ bool Adapter::poll(uint64_t now_ts)
         return false;
 
     // don't pass sync messages to handle msg function
-    if (SimbricksBaseIfInType(&baseIf, msg) == SIMBRICKS_PROTO_MSG_TYPE_SYNC) {
+    uint8_t ty = SimbricksBaseIfInType(&baseIf, msg);
+    if (ty == SIMBRICKS_PROTO_MSG_TYPE_SYNC) {
+        inDone(msg);
+        return true;
+    } else if (ty  == SIMBRICKS_PROTO_MSG_TYPE_TERMINATE) {
+        peerTerminated();
         inDone(msg);
         return true;
     }

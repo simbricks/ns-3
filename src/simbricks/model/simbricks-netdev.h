@@ -93,6 +93,7 @@ protected:
   virtual void introInReceived(const void *data, size_t len) override;
   virtual void initIfParams(SimbricksBaseIfParams &p) override;
   virtual void handleInMsg(volatile SimbricksProtoNetMsg *msg) override;
+  virtual void peerTerminated() override;
 
 private:
   // SimBricks base adapter
@@ -117,6 +118,8 @@ private:
   Ptr<Node> m_node;
   NetDevice::ReceiveCallback m_rxCallback;
   NetDevice::PromiscReceiveCallback m_promiscRxCallback;
+
+  bool terminated;
 
   void AdapterRx (Ptr<Packet> packet);
   void RxInContext (Ptr<Packet> packet);

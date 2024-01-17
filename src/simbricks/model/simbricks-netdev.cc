@@ -100,7 +100,7 @@ TypeId SimbricksNetDevice::GetTypeId (void)
 SimbricksNetDevice::SimbricksNetDevice ()
   : base::GenericBaseAdapter<SimbricksProtoNetMsg, SimbricksProtoNetMsg>::
         Interface(*this),
-    m_adapter(*this), m_mtu(1500), m_node(0)
+    m_adapter(*this), m_mtu(1500), m_node(0), terminated(false)
 {
   NS_LOG_FUNCTION (this);
   // Nullifying callbacks explicitly is probably not needed
@@ -242,6 +242,9 @@ bool SimbricksNetDevice::SendFrom (Ptr<Packet> packet, const Address& source, co
 {
   NS_LOG_FUNCTION (this << packet << source << dest << protocolNumber);
 
+  if (terminated)
+      return false;
+
   EthernetHeader header (false);
   header.SetSource (Mac48Address::ConvertFrom (source));
   header.SetDestination (Mac48Address::ConvertFrom (dest));
@@ -341,6 +344,13 @@ void SimbricksNetDevice::handleInMsg(volatile SimbricksProtoNetMsg *msg)
       MakeEvent (&SimbricksNetDevice::RxInContext, this, packet));
 
   m_adapter.inDone(msg);
+}
+
+void SimbricksNetDevice::peerTerminated()
+{
+  NS_LOG_FUNCTION (this);
+
+  terminated = true;
 }
 
 void SimbricksNetDevice::RxInContext (Ptr<Packet> packet)
