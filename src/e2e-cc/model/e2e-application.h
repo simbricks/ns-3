@@ -67,6 +67,12 @@ class E2EBulkSender : public E2EApplication
     void AddProbe(const E2EConfig& config) override;
 };
 
+class E2EOnOffApp : public E2EApplication
+{
+  public:
+    E2EOnOffApp(const E2EConfig& config);
+};
+
 } // namespace ns3
 
 #endif /* E2E_APPLICATION_H */
