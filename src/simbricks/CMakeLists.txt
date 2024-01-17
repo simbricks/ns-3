@@ -13,10 +13,12 @@ build_lib(
     model/simbricks-base.cc
     model/simbricks-initmgr.cc
     model/simbricks-netdev.cc
+    model/simbricks-trunk.cc
   HEADER_FILES
     model/simbricks-base.h
     model/simbricks-initmgr.h
     model/simbricks-netdev.h
+    model/simbricks-trunk.h
   LIBRARIES_TO_LINK ${libinternet}
                     ${libnetwork}
 )
