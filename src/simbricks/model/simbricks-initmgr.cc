@@ -40,8 +40,36 @@ namespace base {
 
 static void sigusr1_handler(int dummy)
 {
-    std::cout << "main_time = " << Simulator::Now ().ToInteger (Time::PS)
+  InitManager &mgr = InitManager::get();
+
+  std::cout << "STATS: main_time=" << Simulator::Now ().ToInteger (Time::PS)
+    << " tsc=" << rdtsc() << std::endl;
+
+  uint64_t tx_comm_cycles = 0, tx_block_cycles = 0, tx_sync_cycles = 0,
+      rx_comm_cycles = 0, rx_block_cycles = 0;
+
+  for (Adapter *a: mgr.ready) {
+    std::cout << "  " << a->getSocketPath() << ":"
+      << " tx_comm_cycles=" << a->getCyclesTxComm()
+      << " tx_block_cycles=" << a->getCyclesTxBlock()
+      << " tx_sync_cycles=" << a->getCyclesTxSync()
+      << " rx_comm_cycles=" << a->getCyclesRxComm()
+      << " rx_block_cycles=" << a->getCyclesRxBlock()
       << std::endl;
+    tx_comm_cycles += a->getCyclesTxComm();
+    tx_block_cycles += a->getCyclesTxBlock();
+    tx_sync_cycles += a->getCyclesTxSync();
+    rx_comm_cycles += a->getCyclesRxComm();
+    rx_block_cycles += a->getCyclesRxBlock();
+  }
+
+  std::cout << "  TOTAL:"
+    << " tx_comm_cycles=" << tx_comm_cycles
+    << " tx_block_cycles=" << tx_block_cycles
+    << " tx_sync_cycles=" << tx_sync_cycles
+    << " rx_comm_cycles=" << rx_comm_cycles
+    << " rx_block_cycles=" << rx_block_cycles
+    << std::endl;
 }
 
 InitManager::InitManager()
@@ -160,6 +188,7 @@ void InitManager::processEvents()
                 // one done
                 a->introInReceived(handshake.data(), len);
                 waitRx.erase(a);
+                ready.insert(a);
             } else if (x < 0) {
                 NS_ABORT_MSG("SimbricksBaseIfIntroRecv failed");
             }

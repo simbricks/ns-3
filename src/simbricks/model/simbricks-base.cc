@@ -42,7 +42,9 @@ NS_LOG_COMPONENT_DEFINE ("SimbricksBase");
 
 Adapter::Adapter()
     : sync(false), isListen(false), rescheduleSyncTx(false),
-      pollInterval(500000), terminated(false), pool(nullptr)
+      pollInterval(500000), terminated(false), pool(nullptr),
+      cycles_tx_block(0), cycles_tx_comm(0), cycles_tx_sync(0),
+      cycles_rx_block(0), cycles_rx_comm(0)
 {
 }
 
@@ -62,6 +64,9 @@ void Adapter::processInEvent()
 {
     NS_LOG_FUNCTION (this);
 
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+    cycles_rx_start_tsc = rdtsc();
+#endif
     uint64_t now = curTick();
 
     /* run what we can */
@@ -71,12 +76,18 @@ void Adapter::processInEvent()
     if (terminated)
         return;
 
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+    uint64_t block_tsc = cycles_rx_start_tsc;
+#endif
     if (sync) {
         /* in sychronized mode we might need to wait till we get a message with
          * a timestamp allowing us to proceed */
         uint64_t nextTs;
         while ((nextTs = SimbricksBaseIfInTimestamp(&baseIf)) <= now) {
             poll(now);
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+            block_tsc = rdtsc();
+#endif
         }
 
         if (terminated)
@@ -89,17 +100,33 @@ void Adapter::processInEvent()
         inEvent = Simulator::Schedule (PicoSeconds (pollInterval),
             &Adapter::processInEvent, this);
     }
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+    cycles_rx_block += block_tsc - cycles_rx_start_tsc;
+    cycles_rx_comm += rdtsc() - block_tsc;
+#endif
 }
 
 void Adapter::processOutSyncEvent()
 {
     NS_LOG_FUNCTION (this);
-  
+
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+    uint64_t start_tsc = rdtsc();
+    uint64_t block_tsc = start_tsc;
+#endif
     uint64_t now = curTick();
-    while (SimbricksBaseIfOutSync(&baseIf, now));
+    while (SimbricksBaseIfOutSync(&baseIf, now)) {
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+      block_tsc = rdtsc();
+#endif
+    }
     uint64_t next_delay = SimbricksBaseIfOutNextSync(&baseIf) - now;
     outSyncEvent = Simulator::Schedule (PicoSeconds (next_delay),
             &Adapter::processOutSyncEvent, this);
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+    cycles_tx_block += block_tsc - start_tsc;
+    cycles_tx_sync += rdtsc() - block_tsc;
+#endif
 }
 
 void Adapter::rescheduleSync()
@@ -243,7 +270,14 @@ bool Adapter::poll(uint64_t now_ts)
         return true;
     }
 
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+    cycles_rx_comm += rdtsc() - cycles_rx_start_tsc;
+#endif
     handleInMsg(msg);
+
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+    cycles_rx_start_tsc = rdtsc();
+#endif
     return true;
 }
 

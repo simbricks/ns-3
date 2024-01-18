@@ -58,13 +58,15 @@ class InitManager
         void processEvents();
         void connected(Adapter &a);
     public:
+        std::set <Adapter *> ready;
+
         static InitManager &get();
 
         void registerAdapter(Adapter &a);
         void waitReady(Adapter &a);
 };
 
-} /* namespace simbricks */
+} /* namespace base */
 } /* namespace simbricks */
 } /* namespace ns3 */
 

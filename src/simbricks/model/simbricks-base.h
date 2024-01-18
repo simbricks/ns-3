@@ -43,6 +43,15 @@ extern "C" {
 
 namespace base {
 
+#define SIMBRICKS_PROFILE_ADAPTERS
+
+static inline uint64_t rdtsc(void)
+{
+  uint32_t eax, edx;
+  asm volatile ("rdtsc" : "=a" (eax), "=d" (edx));
+  return ((uint64_t) edx << 32) | eax;
+}
+
 class InitManager;
 class Adapter
 {
@@ -59,6 +68,14 @@ class Adapter
     struct SimbricksBaseIf baseIf;
     struct SimbricksBaseIfSHMPool *pool;
     struct SimbricksBaseIfParams params;
+
+    uint64_t cycles_tx_block;
+    uint64_t cycles_tx_comm;
+    uint64_t cycles_tx_sync;
+    uint64_t cycles_tx_start_tsc;
+    uint64_t cycles_rx_start_tsc;
+    uint64_t cycles_rx_block;
+    uint64_t cycles_rx_comm;
 
     void processInEvent();
     void processOutSyncEvent();
@@ -93,6 +110,25 @@ class Adapter
         rescheduleSyncTx = x;
     }
 
+    const char *getSocketPath() {
+        return params.sock_path;
+    }
+    uint64_t getCyclesTxComm() {
+        return cycles_tx_comm;
+    }
+    uint64_t getCyclesTxBlock() {
+        return cycles_tx_block;
+    }
+    uint64_t getCyclesTxSync() {
+        return cycles_tx_sync;
+    }
+    uint64_t getCyclesRxComm() {
+        return cycles_rx_comm;
+    }
+    uint64_t getCyclesRxBlock() {
+        return cycles_rx_block;
+    }
+
     void connect(const std::string &sock_path);
     void listen(const std::string &sock_path, const std::string &shm_path);
     void Stop();
@@ -108,6 +144,10 @@ class Adapter
     }
 
     volatile union SimbricksProtoBaseMsg *outAlloc() {
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+        uint64_t start_tsc = rdtsc();
+        uint64_t block_tsc = start_tsc;
+#endif
         volatile union SimbricksProtoBaseMsg *msg;
         if (terminated)
             return nullptr;
@@ -115,8 +155,17 @@ class Adapter
         do {
             msg = SimbricksBaseIfOutAlloc(&baseIf,
               Simulator::Now ().ToInteger (Time::PS));
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+            if (!msg)
+              block_tsc = rdtsc();
+#endif
         } while (!msg);
+
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+        cycles_tx_block += block_tsc - start_tsc;
+        cycles_tx_start_tsc = block_tsc;
         return msg;
+#endif
     }
 
     void outSend(volatile union SimbricksProtoBaseMsg *msg, uint8_t ty) {
@@ -124,6 +173,9 @@ class Adapter
         if (sync && rescheduleSyncTx) {
             rescheduleSync();
         }
+#ifdef SIMBRICKS_PROFILE_ADAPTERS
+        cycles_tx_comm += rdtsc() - cycles_tx_start_tsc;
+#endif
     }
 };
 
