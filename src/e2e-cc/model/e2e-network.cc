@@ -78,8 +78,8 @@ E2ENetworkNetIf::E2ENetworkNetIf(const E2EConfig& config) : E2ENetwork(config)
     config.SetAttrIfContained<TimeValue, Time>(netDevice, "PollDelay", "PollDelay");
     config.SetAttrIfContained<TimeValue, Time>(netDevice, "EthLatency", "EthLatency");
     config.SetAttrIfContained<IntegerValue, int>(netDevice, "Sync", "Sync");
-    config.SetAttrIfContained<IntegerValue, int>(netDevice, "Listen", "Listen");
-    config.SetAttrIfContained<IntegerValue, int>(netDevice, "ShmPath", "ShmPath");
+    config.SetAttrIfContained<StringValue, std::string>(netDevice, "Listen", "Listen");
+    config.SetAttrIfContained<StringValue, std::string>(netDevice, "ShmPath", "ShmPath");
 
     netDevice->Start();
 
@@ -99,7 +99,7 @@ E2ENetworkNicIf::E2ENetworkNicIf(const E2EConfig& config) : E2ENetwork(config)
     config.SetAttrIfContained<TimeValue, Time>(netDevice, "PollDelay", "PollDelay");
     config.SetAttrIfContained<TimeValue, Time>(netDevice, "EthLatency", "EthLatency");
     config.SetAttrIfContained<IntegerValue, int>(netDevice, "Sync", "Sync");
-    config.SetAttrIfContained<IntegerValue, int>(netDevice, "ShmPath", "ShmPath");
+    config.SetAttrIfContained<StringValue, std::string>(netDevice, "ShmPath", "ShmPath");
 
     netDevice->SetAttribute("Listen", BooleanValue(true));
 
