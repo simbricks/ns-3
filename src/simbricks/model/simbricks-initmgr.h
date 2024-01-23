@@ -53,14 +53,15 @@ class InitManager
         std::set <Adapter *> unconnected;
         std::set <Adapter *> waitRx;
 
-        InitManager();
-
         void processEvents();
         void connected(Adapter &a);
     public:
         std::set <Adapter *> ready;
 
         static InitManager &get();
+
+        // This constructor should not be used, this is a singleton, use get().
+        InitManager();
 
         void registerAdapter(Adapter &a);
         void waitReady(Adapter &a);
