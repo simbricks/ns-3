@@ -1210,7 +1210,9 @@ def run_step(args, target_to_run, target_args):
 
     if not args.dry_run:
         try:
-            subprocess.run(program_arguments, env=proc_env, cwd=working_dir, shell=use_shell, check=True)
+            os.chdir(working_dir)
+            os.execve(program_arguments[0], program_arguments, proc_env)
+            #subprocess.run(program_arguments, env=proc_env, cwd=working_dir, shell=use_shell, check=True)
         except subprocess.CalledProcessError as e:
             # Replace list of arguments with a single string
             e.cmd = " ".join(e.cmd)
