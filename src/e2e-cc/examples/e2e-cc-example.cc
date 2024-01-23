@@ -34,6 +34,10 @@ main(int argc, char* argv[])
         {
             Simulator::Stop(Time(std::string(*stopTime)));
         }
+        if (auto macStart {globalConfig.Find("MACStart")}; macStart) {
+            Mac48Address::SetAllocationIndex(
+              std::stoull(std::string(*macStart)));
+        }
     }
 
     E2EConfig rootConfig("");
