@@ -38,6 +38,8 @@ namespace ns3 {
 namespace simbricks {
 namespace base {
 
+static InitManager im_instance;
+
 static void sigusr1_handler(int dummy)
 {
   InitManager &mgr = InitManager::get();
@@ -74,19 +76,17 @@ static void sigusr1_handler(int dummy)
 
 InitManager::InitManager()
 {
+    static bool exists = false;
+    NS_ABORT_MSG_IF (exists, "Only one InitManager instance must exist");
+    exists = true;
+
+    // also register usr1 signal handler (once)
+    signal(SIGUSR1, sigusr1_handler);
 }
 
 InitManager& InitManager::get()
 {
-    static InitManager *im = nullptr;
-    if (!im) {
-        im = new InitManager();
-
-        // also register usr1 signal handler (once)
-        signal(SIGUSR1, sigusr1_handler);
-    }
-
-    return *im;
+    return im_instance;
 }
 
 void InitManager::registerAdapter(Adapter &a)
