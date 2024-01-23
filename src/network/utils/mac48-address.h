@@ -115,6 +115,11 @@ class Mac48Address
     static void ResetAllocationIndex();
 
     /**
+     * Set the Mac48Address allocation index. Can be used to avoid collisions.
+     */
+    static void SetAllocationIndex(uint64_t idx);
+
+    /**
      * \returns true if this is a broadcast address, false otherwise.
      */
     bool IsBroadcast() const;

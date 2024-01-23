@@ -175,6 +175,13 @@ Mac48Address::ResetAllocationIndex()
     m_allocationIndex = 0;
 }
 
+void
+Mac48Address::SetAllocationIndex(uint64_t idx)
+{
+    NS_LOG_FUNCTION(idx);
+    m_allocationIndex = idx;
+}
+
 uint8_t
 Mac48Address::GetType()
 {
