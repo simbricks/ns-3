@@ -151,7 +151,8 @@ void Adapter::startEvent()
         outSyncEvent = Simulator::ScheduleNow (
           &Adapter::processOutSyncEvent, this);
     // next schedule poll event
-    inEvent = Simulator::ScheduleNow (&Adapter::processInEvent, this);
+    inEvent = Simulator::Schedule (PicoSeconds(1),
+          &Adapter::processInEvent, this);
 }
 
 void Adapter::commonInit(const std::string &sock_path)
