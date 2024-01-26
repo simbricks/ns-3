@@ -3,6 +3,7 @@
 #include "ns3/internet-module.h"
 
 #include <iostream>
+#include <queue>
 
 /**
  * \file
@@ -61,13 +62,50 @@ main(int argc, char* argv[])
         (*topology)->AddHost(host);
     }
 
+    // store trunk devices in a priority queue and create them in the
+    // right order after all trunks exist
+    using elem_t = std::pair<int, const E2EConfig*>;
+    auto cmp = [](elem_t left, elem_t right) { return left.first > right.first; };
+    std::priority_queue<elem_t, std::vector<elem_t>, decltype(cmp)> trunkDevices(cmp);
+
     auto& networkConfigs = configParser.GetNetworkArgs();
     for (auto& config : networkConfigs)
     {
-        Ptr<E2ENetwork> network = E2ENetwork::CreateNetwork(config);
-        auto topology = root->GetE2EComponentParent<E2ETopologyNode>(network->GetIdPath());
-        NS_ABORT_MSG_UNLESS(topology, "Topology for node '" << network->GetId() << "' not found");
-        (*topology)->AddNetwork(network);
+        auto type = config.Find("Type");
+        NS_ABORT_MSG_UNLESS(type, "Network component has no type");
+
+        if (*type == "Trunk")
+        {
+            Ptr<E2ENetworkTrunk> trunk = Create<E2ENetworkTrunk>(config);
+            root->AddE2EComponent(trunk);
+        }
+        else if (*type == "TrunkDevice")
+        {
+            auto orderIdStr = config.Find("OrderId");
+            NS_ABORT_MSG_UNLESS(orderIdStr, "Trunk device does not contain an order id");
+            auto orderId = config.ConvertArgToInteger(std::string(*orderIdStr));
+            trunkDevices.emplace(orderId, &config);
+        }
+        else
+        {
+            Ptr<E2ENetwork> network = E2ENetwork::CreateNetwork(config);
+            auto topology = root->GetE2EComponentParent<E2ETopologyNode>(network->GetIdPath());
+            NS_ABORT_MSG_UNLESS(topology,
+                "Topology for node '" << network->GetId() << "' not found");
+            (*topology)->AddNetwork(network);
+        }
+    }
+
+    // create the trunk devices
+    while (not trunkDevices.empty())
+    {
+        auto devConf = trunkDevices.top();
+        trunkDevices.pop();
+        auto device = Create<E2ENetworkTrunkDevice>(*devConf.second, root, devConf.first);
+        auto topology = root->GetE2EComponentParent<E2ETopologyNode>(device->GetIdPath());
+        NS_ABORT_MSG_UNLESS(topology,
+            "Topology for node '" << device->GetId() << "' not found");
+        (*topology)->AddNetwork(device);
     }
 
     auto& applicationConfigs = configParser.GetApplicationArgs();

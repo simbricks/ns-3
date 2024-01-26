@@ -30,6 +30,7 @@
 #include "e2e-component.h"
 
 #include "ns3/network-module.h"
+#include "ns3/simbricks-module.h"
 
 namespace ns3
 {
@@ -58,6 +59,24 @@ class E2ENetworkNicIf : public E2ENetwork
 {
   public:
     E2ENetworkNicIf(const E2EConfig &config);
+};
+
+class E2ENetworkTrunk : public E2EComponent
+{
+  public:
+    E2ENetworkTrunk(const E2EConfig &config);
+
+    Ptr<NetDevice> AddDevice(int id);
+
+  private:
+    Ptr<simbricks::SimbricksTrunk> m_trunk;
+    int m_current_id = -1;
+};
+
+class E2ENetworkTrunkDevice : public E2ENetwork
+{
+  public:
+    E2ENetworkTrunkDevice(const E2EConfig &config, Ptr<E2EComponent> root, int64_t orderId);
 };
 
 } // namespace ns3

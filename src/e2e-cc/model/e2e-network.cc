@@ -25,8 +25,6 @@
 
 #include "e2e-network.h"
 
-#include "ns3/simbricks-module.h"
-
 namespace ns3
 {
 
@@ -109,6 +107,57 @@ E2ENetworkNicIf::E2ENetworkNicIf(const E2EConfig& config) : E2ENetwork(config)
 
     m_netDevice = netDevice;
 
+}
+
+E2ENetworkTrunk::E2ENetworkTrunk(const E2EConfig& config) : E2EComponent(config)
+{
+    NS_ABORT_MSG_IF(GetId().empty(), "Trunk has no id");
+    NS_ABORT_MSG_IF(GetIdPath().size() != 1,
+        "Trunk '" << GetId() << "' has invalid path length of " << GetIdPath().size());
+    
+    m_trunk = CreateObject<simbricks::SimbricksTrunk>();
+
+    if (not config.SetAttrIfContained<StringValue, std::string>(m_trunk,
+        "UnixSocket", "UnixSocket"))
+    {
+        NS_LOG_WARN("No Unix socket path for Simbricks trunk '" << GetId() << "' given.");
+    }
+    config.SetAttrIfContained<TimeValue, Time>(m_trunk, "SyncDelay", "SyncDelay");
+    config.SetAttrIfContained<TimeValue, Time>(m_trunk, "PollDelay", "PollDelay");
+    config.SetAttrIfContained<TimeValue, Time>(m_trunk, "EthLatency", "EthLatency");
+    config.SetAttrIfContained<IntegerValue, int>(m_trunk, "Sync", "Sync");
+    config.SetAttrIfContained<StringValue, std::string>(m_trunk, "Listen", "Listen");
+    config.SetAttrIfContained<StringValue, std::string>(m_trunk, "ShmPath", "ShmPath");
+
+    m_trunk->Start();
+}
+
+Ptr<NetDevice>
+E2ENetworkTrunk::AddDevice(int id)
+{
+    NS_ABORT_MSG_IF(id <= m_current_id,
+        "Wrong ordering of trunk devices, current id: " << m_current_id << ", given id: " << id
+        << ", for trunk: " << GetId());
+    m_current_id = id;
+    return m_trunk->AddNetDev();
+}
+
+E2ENetworkTrunkDevice::E2ENetworkTrunkDevice(const E2EConfig& config,
+                                             Ptr<E2EComponent> root,
+                                             int64_t orderId)
+    : E2ENetwork(config)
+{
+    auto trunkId = config.Find("Trunk");
+    NS_ABORT_MSG_UNLESS(trunkId,
+        "Trunk device '" << GetId() << "' does not contain a trunk to use");
+
+    auto trunk = root->GetE2EComponent<E2ENetworkTrunk>(*trunkId);
+    NS_ABORT_MSG_UNLESS(trunk, "Trunk '" << *trunkId << "' not found");
+
+    Ptr<NetDevice> netDevice = (*trunk)->AddDevice(orderId);
+    NS_ABORT_MSG_UNLESS(netDevice, "Failed to add device to trunk '" << *trunkId << "'");
+
+    m_netDevice = netDevice;
 }
 
 } // namespace ns3
