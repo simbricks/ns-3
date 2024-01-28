@@ -261,20 +261,23 @@ bool Adapter::poll(uint64_t now_ts)
         return false;
 
     // don't pass sync messages to handle msg function
+    bool handle = true;
     uint8_t ty = SimbricksBaseIfInType(&baseIf, msg);
     if (ty == SIMBRICKS_PROTO_MSG_TYPE_SYNC) {
         inDone(msg);
-        return true;
+        handle = false;
     } else if (ty  == SIMBRICKS_PROTO_MSG_TYPE_TERMINATE) {
         peerTerminated();
         inDone(msg);
-        return true;
+        handle = false;
     }
 
 #ifdef SIMBRICKS_PROFILE_ADAPTERS
     cycles_rx_comm += rdtsc() - cycles_rx_start_tsc;
 #endif
-    handleInMsg(msg);
+
+    if (handle)
+        handleInMsg(msg);
 
 #ifdef SIMBRICKS_PROFILE_ADAPTERS
     cycles_rx_start_tsc = rdtsc();
