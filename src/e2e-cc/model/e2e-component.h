@@ -87,7 +87,7 @@ E2EComponent::GetE2EComponent(const std::vector<std::string_view>& idPath)
         return {};
     }
 
-    for (int i = 1; i < idPath.size(); ++i)
+    for (std::size_t i = 1; i < idPath.size(); ++i)
     {
         if (auto it {component->m_components.find(idPath[i])}; it != component->m_components.end())
         {
