@@ -69,6 +69,12 @@ E2EHost::GetNetDevice()
     return m_netDevice;
 }
 
+Ptr<Node>
+E2EHost::GetNode()
+{
+    return Ptr<Node>();
+}
+
 void
 E2EHost::AddApplication(Ptr<E2EApplication> application)
 {
@@ -154,6 +160,12 @@ E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
     }
 
     SetIpAddress();
+}
+
+Ptr<Node>
+E2ESimpleNs3Host::GetNode()
+{
+    return m_node;
 }
 
 void
