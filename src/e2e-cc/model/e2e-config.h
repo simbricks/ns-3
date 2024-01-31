@@ -23,8 +23,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef E2E_CC_H
-#define E2E_CC_H
+#ifndef E2E_CONFIG_H
+#define E2E_CONFIG_H
 
 #include "ns3/object.h"
 #include "ns3/object-factory.h"
@@ -169,9 +169,9 @@ E2EConfig::SetFactoryIfContained(ObjectFactory& factory,
 class E2EConfigParser
 {
   public:
-    E2EConfigParser() = default;
+    E2EConfigParser();
     
-    void ParseArguments(int argc, char *argv[]);
+    virtual void ParseArguments(int argc, char* argv[]);
 
     const std::vector<E2EConfig>& GetTopologyNodeArgs();
     const std::vector<E2EConfig>& GetTopologyChannelArgs();
@@ -181,6 +181,11 @@ class E2EConfigParser
     const std::vector<E2EConfig>& GetProbeArgs();
     const std::vector<E2EConfig>& GetGlobalArgs();
 
+  protected:
+    static bool AddConfig(std::vector<E2EConfig> *configs, const std::string &args);
+
+    CommandLine m_cmd;
+
   private:
     std::vector<E2EConfig> m_topologyNodes;
     std::vector<E2EConfig> m_topologyChannels;
@@ -189,10 +194,8 @@ class E2EConfigParser
     std::vector<E2EConfig> m_applications;
     std::vector<E2EConfig> m_probes;
     std::vector<E2EConfig> m_globals;
-
-    static bool AddConfig(std::vector<E2EConfig> *configs, const std::string &args);
 };
 
 } // namespace ns3
 
-#endif /* E2E_CC_H */
+#endif /* E2E_CONFIG_H */

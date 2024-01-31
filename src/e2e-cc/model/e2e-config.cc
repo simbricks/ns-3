@@ -139,24 +139,27 @@ E2EConfig::SplitArgs()
     }
 }
 
+E2EConfigParser::E2EConfigParser() : m_cmd(__FILE__)
+{}
+
 void
-E2EConfigParser::ParseArguments(int argc, char *argv[])
+E2EConfigParser::ParseArguments(int argc, char* argv[])
 {
     std::string configFile;
-    CommandLine cmd (__FILE__);
-    cmd.AddValue("TopologyNode", "Add a topology node to the simulation",
+    m_cmd.AddValue("TopologyNode", "Add a topology node to the simulation",
         MakeBoundCallback(AddConfig, &m_topologyNodes));
-    cmd.AddValue("TopologyChannel", "Add a topology channel to the simulation",
+    m_cmd.AddValue("TopologyChannel", "Add a topology channel to the simulation",
         MakeBoundCallback(AddConfig, &m_topologyChannels));
-    cmd.AddValue("Host", "Add a host to the simulation", MakeBoundCallback(AddConfig, &m_hosts));
-    cmd.AddValue("Network", "Add a network to the simulation",
+    m_cmd.AddValue("Host", "Add a host to the simulation", MakeBoundCallback(AddConfig, &m_hosts));
+    m_cmd.AddValue("Network", "Add a network to the simulation",
         MakeBoundCallback(AddConfig, &m_networks));
-    cmd.AddValue("App", "Add an application to the simulation",
+    m_cmd.AddValue("App", "Add an application to the simulation",
         MakeBoundCallback(AddConfig, &m_applications));
-    cmd.AddValue("Probe", "Add a probe to the simulation", MakeBoundCallback(AddConfig, &m_probes));
-    cmd.AddValue("Global", "Add global options", MakeBoundCallback(AddConfig, &m_globals));
-    cmd.AddValue("ConfigFile", "A file that contains command line options", configFile);
-    cmd.Parse(argc, argv);
+    m_cmd.AddValue("Probe", "Add a probe to the simulation",
+        MakeBoundCallback(AddConfig, &m_probes));
+    m_cmd.AddValue("Global", "Add global options", MakeBoundCallback(AddConfig, &m_globals));
+    m_cmd.AddValue("ConfigFile", "A file that contains command line options", configFile);
+    m_cmd.Parse(argc, argv);
 
     if (not configFile.empty())
     {
@@ -226,7 +229,7 @@ E2EConfigParser::ParseArguments(int argc, char *argv[])
         }
         
         file.close();
-        cmd.Parse(args);
+        m_cmd.Parse(args);
     }
 
     NS_ABORT_MSG_IF(m_globals.size() > 1, "Global options should be given only once");
