@@ -44,6 +44,7 @@ class E2EHost : public E2EComponent
     static Ptr<E2EHost> CreateHost(const E2EConfig& config);
 
     Ptr<NetDevice> GetNetDevice();
+    virtual Ptr<Node> GetNode();
     virtual void AddApplication(Ptr<E2EApplication> application);
 
   protected:
@@ -61,6 +62,7 @@ class E2ESimpleNs3Host : public E2EHost
   public:
     E2ESimpleNs3Host(const E2EConfig &config);
 
+    Ptr<Node> GetNode() override;
     void AddApplication(Ptr<E2EApplication> application) override;
 
   private:
