@@ -47,7 +47,8 @@ E2EHost::CreateHost(const E2EConfig& config)
 {
     auto type_opt {config.Find("Type")};
     NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Host has no type");
-    std::string_view type {*type_opt};
+    std::string_view type {(*type_opt).value};
+    (*type_opt).processed = true;
 
     if (type == "Simbricks")
     {
@@ -153,11 +154,12 @@ E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
     // Set congestion control algorithm
     if (auto algo {config.Find("CongestionControl")}; algo)
     {
-        TypeId tid = TypeId::LookupByName(std::string(*algo));
+        TypeId tid = TypeId::LookupByName(std::string((*algo).value));
         std::stringstream nodeId;
         nodeId << m_node->GetId();
         std::string specificNode = "/NodeList/" + nodeId.str() + "/$ns3::TcpL4Protocol/SocketType";
         Config::Set(specificNode, TypeIdValue(tid));
+        (*algo).processed = true;
     }
 
     SetIpAddress();
@@ -182,7 +184,8 @@ E2ESimpleNs3Host::SetIpAddress()
     std::string_view ipString;
     if (auto ip {m_config.Find("Ip")}; ip)
     {
-        ipString = *ip;
+        ipString = (*ip).value;
+        (*ip).processed = true;
     }
     else
     {

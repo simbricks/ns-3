@@ -43,7 +43,8 @@ E2ENetwork::CreateNetwork(const E2EConfig& config)
 {
     auto type_opt {config.Find("Type")};
     NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Host has no type");
-    std::string_view type {*type_opt};
+    std::string_view type {(*type_opt).value};
+    (*type_opt).processed = true;
 
     if (type == "NetIf")
     {
@@ -151,11 +152,12 @@ E2ENetworkTrunkDevice::E2ENetworkTrunkDevice(const E2EConfig& config,
     NS_ABORT_MSG_UNLESS(trunkId,
         "Trunk device '" << GetId() << "' does not contain a trunk to use");
 
-    auto trunk = root->GetE2EComponent<E2ENetworkTrunk>(*trunkId);
-    NS_ABORT_MSG_UNLESS(trunk, "Trunk '" << *trunkId << "' not found");
+    auto trunk = root->GetE2EComponent<E2ENetworkTrunk>((*trunkId).value);
+    NS_ABORT_MSG_UNLESS(trunk, "Trunk '" << (*trunkId).value << "' not found");
+    (*trunkId).processed = true;
 
     Ptr<NetDevice> netDevice = (*trunk)->AddDevice(orderId);
-    NS_ABORT_MSG_UNLESS(netDevice, "Failed to add device to trunk '" << *trunkId << "'");
+    NS_ABORT_MSG_UNLESS(netDevice, "Failed to add device to trunk '" << (*trunkId).value << "'");
 
     m_netDevice = netDevice;
 }

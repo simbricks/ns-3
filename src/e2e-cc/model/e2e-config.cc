@@ -39,13 +39,49 @@ E2EConfig::E2EConfig(const std::string &args) : m_rawArgs{args}
     SplitArgs();
 }
 
+E2EConfig::iterator
+E2EConfig::begin()
+{
+    return m_parsedArgs.begin();
+}
+
+E2EConfig::const_iterator
+E2EConfig::begin() const
+{
+    return m_parsedArgs.begin();
+}
+
+E2EConfig::const_iterator
+E2EConfig::cbegin() const
+{
+    return m_parsedArgs.cbegin();
+}
+
+E2EConfig::iterator
+E2EConfig::end()
+{
+    return m_parsedArgs.end();
+}
+
+E2EConfig::const_iterator
+E2EConfig::end() const
+{
+    return m_parsedArgs.end();
+}
+
+E2EConfig::const_iterator
+E2EConfig::cend() const
+{
+    return m_parsedArgs.cend();
+}
+
 const E2EConfig::args_type&
 E2EConfig::GetArgs() const
 {
     return m_parsedArgs;
 }
 
-std::optional<std::string_view>
+std::optional<E2EConfigValue>
 E2EConfig::Find(std::string_view key) const
 {
     if (auto it = m_parsedArgs.find(key); it != m_parsedArgs.end())
@@ -53,6 +89,61 @@ E2EConfig::Find(std::string_view key) const
         return it->second;
     }
     return {};
+}
+
+void
+E2EConfig::SetAttr(Ptr<Object> obj) const
+{
+    for (auto& config : m_parsedArgs)
+    {
+        if (config.second.processed)
+        {
+            // this element has already been processed
+            continue;
+        }
+        if (config.second.type.empty())
+        {
+            obj->SetAttribute(std::string(config.first),
+                StringValue(std::string(config.second.value)));
+        }
+        else
+        {
+            Ptr<AttributeValue> val = ResolveType(config.second.type, config.second.value);
+            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
+                                     << config.second.value
+                                     << " with type "
+                                     << config.second.type);
+            obj->SetAttribute(std::string(config.first), *val);
+        }
+        config.second.processed = true;
+    }
+}
+
+void
+E2EConfig::SetFactory(ObjectFactory& factory) const
+{
+    for (auto& config : m_parsedArgs)
+    {
+        if (config.second.processed)
+        {
+            // this element has already been processed
+            continue;
+        }
+        if (config.second.type.empty())
+        {
+            factory.Set(std::string(config.first), StringValue(std::string(config.second.value)));
+        }
+        else
+        {
+            Ptr<AttributeValue> val = ResolveType(config.second.type, config.second.value);
+            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
+                                     << config.second.value
+                                     << " with type "
+                                     << config.second.type);
+            factory.Set(std::string(config.first), *val);
+        }
+        config.second.processed = true;
+    }
 }
 
 int64_t
@@ -121,6 +212,15 @@ E2EConfig::SplitArgs()
             "Invalid argument format: key without value (" << key << ")");
         key.remove_suffix(key.size() - pos);
         arg_view.remove_prefix(pos + 1);
+        // check if there is a type annotation
+        std::string_view type {};
+        pos = key.find('(');
+        if (pos != std::string_view::npos)
+        {
+            NS_ABORT_MSG_UNLESS(key.back() == ')', "Illformed key with type, missing ')': " << key);
+            type = key.substr(1, key.size() - 2);
+            key.remove_suffix(key.size() - pos);
+        }
 
         // extract value
         std::string_view value {arg_view};
@@ -135,8 +235,30 @@ E2EConfig::SplitArgs()
             arg_view.remove_prefix(arg_view.size());
         }
 
-        m_parsedArgs.emplace(key, value);
+        m_parsedArgs.emplace(key, E2EConfigValue{type, value});
     }
+}
+
+Ptr<AttributeValue>
+E2EConfig::ResolveType(std::string_view type, std::string_view value) const
+{
+    if (type == "InetSocketAddress")
+    {
+        std::string_view address {value};
+        std::string_view portString {value};
+
+        auto pos {address.find(':')};
+        NS_ABORT_MSG_IF(pos == std::string_view::npos, "Invalid address '" << address << "'");
+
+        address.remove_suffix(address.size() - pos);
+        portString.remove_prefix(pos + 1);
+
+        auto port {ConvertArgToUInteger(std::string(portString))};
+        NS_ABORT_MSG_IF(port > 65535, "Port '" << port << "' is out of range");
+
+        return Create<AddressValue>(InetSocketAddress(std::string(address).c_str(), port));
+    }
+    return Ptr<AttributeValue>();
 }
 
 E2EConfigParser::E2EConfigParser() : m_cmd(__FILE__)

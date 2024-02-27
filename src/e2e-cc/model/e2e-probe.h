@@ -104,20 +104,24 @@ inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config
     m_output = &std::cout;
     if (auto file {config.Find("File")}; file)
     {
-        m_of = std::ofstream(std::string(*file), std::ios::out);
+        m_of = std::ofstream(std::string((*file).value), std::ios::out);
         m_output = &m_of;
+        (*file).processed = true;
     }
     if (auto header {config.Find("Header")}; header)
     {
-        *m_output << *header << std::endl;
+        *m_output << (*header).value << std::endl;
+        (*header).processed = true;
     }
     if (auto unit {config.Find("Unit")}; unit)
     {
-        m_unit = *unit;
+        m_unit = (*unit).value;
+        (*unit).processed = true;
     }
     if (auto interval {config.Find("Interval")}; interval)
     {
-        m_interval = Time(std::string(*interval));
+        m_interval = Time(std::string((*interval).value));
+        (*interval).processed = true;
     }
     else
     {
@@ -125,7 +129,8 @@ inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config
     }
     if (auto start {config.Find("Start")}; start)
     {
-        startTime = Time(std::string(*start));
+        startTime = Time(std::string((*start).value));
+        (*start).processed = true;
     }
     else
     {
