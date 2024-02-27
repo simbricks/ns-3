@@ -35,14 +35,16 @@ E2EComponent::E2EComponent(const E2EConfig &config) : m_config{config}
     auto id = config.Find("Id");
     if (id)
     {
-        m_id = *id;
-        m_idPath = SplitIdPath(*id);
+        m_id = (*id).value;
+        (*id).processed = true;
+        m_idPath = SplitIdPath((*id).value);
     }
 
     auto type = config.Find("Type");
     if (type)
     {
-        m_type = *type;
+        m_type = (*type).value;
+        (*type).processed = true;
     }
 }
 

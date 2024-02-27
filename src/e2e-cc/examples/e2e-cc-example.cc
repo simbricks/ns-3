@@ -32,11 +32,13 @@ main(int argc, char* argv[])
         auto& globalConfig = configParser.GetGlobalArgs()[0];
         if (auto stopTime {globalConfig.Find("StopTime")}; stopTime)
         {
-            Simulator::Stop(Time(std::string(*stopTime)));
+            Simulator::Stop(Time(std::string((*stopTime).value)));
+            (*stopTime).processed = true;
         }
         if (auto macStart {globalConfig.Find("MACStart")}; macStart) {
             Mac48Address::SetAllocationIndex(
-              std::stoull(std::string(*macStart)));
+              std::stoull(std::string((*macStart).value)));
+            (*macStart).processed = true;
         }
     }
 
@@ -78,16 +80,17 @@ main(int argc, char* argv[])
         auto type = config.Find("Type");
         NS_ABORT_MSG_UNLESS(type, "Network component has no type");
 
-        if (*type == "Trunk")
+        if ((*type).value == "Trunk")
         {
             Ptr<E2ENetworkTrunk> trunk = Create<E2ENetworkTrunk>(config);
             root->AddE2EComponent(trunk);
         }
-        else if (*type == "TrunkDevice")
+        else if ((*type).value == "TrunkDevice")
         {
             auto orderIdStr = config.Find("OrderId");
             NS_ABORT_MSG_UNLESS(orderIdStr, "Trunk device does not contain an order id");
-            auto orderId = config.ConvertArgToInteger(std::string(*orderIdStr));
+            (*orderIdStr).processed = true;
+            auto orderId = config.ConvertArgToInteger(std::string((*orderIdStr).value));
             trunkDevices.emplace(orderId, &config);
         }
         else
@@ -127,8 +130,8 @@ main(int argc, char* argv[])
         auto id = config.Find("Id");
         NS_ABORT_MSG_UNLESS(id, "Probe has no id");
 
-        auto component = root->GetE2EComponentParent<E2EComponent>(*id);
-        NS_ABORT_MSG_UNLESS(component, "Component for probe '" << *id << "' not found");
+        auto component = root->GetE2EComponentParent<E2EComponent>((*id).value);
+        NS_ABORT_MSG_UNLESS(component, "Component for probe '" << (*id).value << "' not found");
 
         (*component)->AddProbe(config);
     }

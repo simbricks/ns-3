@@ -43,17 +43,37 @@ namespace ns3
 // Each class should be documented using Doxygen,
 // and have an \ingroup e2e-cc directive
 
+struct E2EConfigValue
+{
+    std::string_view type;
+    std::string_view value;
+    mutable bool processed {false};
+};
+
 /* ... */
 class E2EConfig
 {
   private:
-    using args_type = std::unordered_map<std::string_view, std::string_view>;
+    using args_type = std::unordered_map<std::string_view, E2EConfigValue>;
 
   public:
     E2EConfig(const std::string &args);
 
+    using iterator = args_type::iterator;
+    using const_iterator = args_type::const_iterator;
+
+    iterator begin();
+    const_iterator begin() const;
+    const_iterator cbegin() const;
+    iterator end();
+    const_iterator end() const;
+    const_iterator cend() const;
+
     const args_type& GetArgs() const;
-    std::optional<std::string_view> Find(std::string_view key) const;
+    std::optional<E2EConfigValue> Find(std::string_view key) const;
+
+    void SetAttr(Ptr<Object> obj) const;
+    void SetFactory(ObjectFactory& factory) const;
 
     template<typename T, typename U>
     bool SetAttrIfContained(Ptr<Object> obj, std::string_view mapKey,
@@ -71,6 +91,7 @@ class E2EConfig
     args_type m_parsedArgs;
 
     void SplitArgs();
+    Ptr<AttributeValue> ResolveType(std::string_view type, std::string_view value) const;
 };
 
 template <typename T, typename U>
@@ -81,24 +102,25 @@ E2EConfig::SetAttrIfContained(Ptr<Object> obj,
 {
     if (auto it = m_parsedArgs.find(mapKey); it != m_parsedArgs.end())
     {
+        std::string_view attributeValue = it->second.value;
         if constexpr (std::is_same_v<U, std::string>)
         {
-            obj->SetAttribute(attributeKey, T(std::string(it->second)));
+            obj->SetAttribute(attributeKey, T(std::string(attributeValue)));
         }
         else if constexpr (std::is_same_v<U, int>)
         {
-            int64_t value {ConvertArgToInteger(std::string(it->second))};
+            int64_t value {ConvertArgToInteger(std::string(attributeValue))};
             obj->SetAttribute(attributeKey, T(value));
         }
         else if constexpr (std::is_same_v<U, unsigned>)
         {
-            uint64_t value {ConvertArgToUInteger(std::string(it->second))};
+            uint64_t value {ConvertArgToUInteger(std::string(attributeValue))};
             obj->SetAttribute(attributeKey, T(value));
         }
         else if constexpr (std::is_same_v<U, InetSocketAddress>)
         {
-            std::string_view address {it->second};
-            std::string_view portString {it->second};
+            std::string_view address {attributeValue};
+            std::string_view portString {attributeValue};
 
             auto pos {address.find(':')};
             NS_ABORT_MSG_IF(pos == std::string_view::npos, "Invalid address '" << address << "'");
@@ -112,8 +134,9 @@ E2EConfig::SetAttrIfContained(Ptr<Object> obj,
         }
         else
         {
-            obj->SetAttribute(attributeKey, T(U(std::string(it->second))));
+            obj->SetAttribute(attributeKey, T(U(std::string(attributeValue))));
         }
+        it->second.processed = true;
         return true;
     }
     return false;
@@ -127,24 +150,25 @@ E2EConfig::SetFactoryIfContained(ObjectFactory& factory,
 {
     if (auto it = m_parsedArgs.find(mapKey); it != m_parsedArgs.end())
     {
+        std::string_view attributeValue = it->second.value;
         if constexpr (std::is_same_v<U, std::string>)
         {
-            factory.Set(attributeKey, T(std::string(it->second)));
+            factory.Set(attributeKey, T(std::string(attributeValue)));
         }
         else if constexpr (std::is_same_v<U, int>)
         {
-            int64_t value {ConvertArgToInteger(std::string(it->second))};
+            int64_t value {ConvertArgToInteger(std::string(attributeValue))};
             factory.Set(attributeKey, T(value));
         }
         else if constexpr (std::is_same_v<U, unsigned>)
         {
-            uint64_t value {ConvertArgToUInteger(std::string(it->second))};
+            uint64_t value {ConvertArgToUInteger(std::string(attributeValue))};
             factory.Set(attributeKey, T(value));
         }
         else if constexpr (std::is_same_v<U, InetSocketAddress>)
         {
-            std::string_view address {it->second};
-            std::string_view portString {it->second};
+            std::string_view address {attributeValue};
+            std::string_view portString {attributeValue};
 
             auto pos {address.find(':')};
             NS_ABORT_MSG_IF(pos == std::string_view::npos, "Invalid address '" << address << "'");
@@ -158,8 +182,9 @@ E2EConfig::SetFactoryIfContained(ObjectFactory& factory,
         }
         else
         {
-            factory.Set(attributeKey, T(U(std::string(it->second))));
+            factory.Set(attributeKey, T(U(std::string(attributeValue))));
         }
+        it->second.processed = true;
         return true;
     }
     return false;

@@ -47,7 +47,8 @@ E2ETopologyNode::CreateTopologyNode(const E2EConfig& config)
 {
     auto type_opt {config.Find("Type")};
     NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Topology node has no type");
-    std::string_view type {*type_opt};
+    std::string_view type {(*type_opt).value};
+    (*type_opt).processed = true;
 
     if (type == "Switch")
     {
@@ -71,7 +72,8 @@ E2ESwitchNode::E2ESwitchNode(const E2EConfig& config) : E2ETopologyNode(config)
 
     if (auto mtu {config.Find("Mtu")}; mtu)
     {
-        bridgeHelper.SetDeviceAttribute("Mtu", StringValue(std::string(*mtu)));
+        bridgeHelper.SetDeviceAttribute("Mtu", StringValue(std::string((*mtu).value)));
+        (*mtu).processed = true;
     }
 
     NetDeviceContainer switchContainer = bridgeHelper.Install(m_node, NetDeviceContainer());
@@ -119,7 +121,8 @@ E2ETopologyChannel::CreateTopologyChannel(const E2EConfig& config)
 {
     auto type_opt {config.Find("Type")};
     NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Topology channel has no type");
-    std::string_view type {*type_opt};
+    std::string_view type {(*type_opt).value};
+    (*type_opt).processed = true;
 
     if (type == "Simple")
     {
@@ -136,16 +139,20 @@ E2ESimpleChannel::E2ESimpleChannel(const E2EConfig& config)
 {
     if (auto opt {config.Find("DataRate")}; opt)
     {
-        m_channelHelper.SetDeviceAttribute("DataRate", DataRateValue(DataRate(std::string(*opt))));
+        m_channelHelper.SetDeviceAttribute("DataRate",
+            DataRateValue(DataRate(std::string((*opt).value))));
+        (*opt).processed = true;
     }
     if (auto opt {config.Find("QueueSize")}; opt)
     {
         m_channelHelper.SetQueue("ns3::DropTailQueue", "MaxSize",
-            QueueSizeValue(QueueSize(std::string(*opt))));
+            QueueSizeValue(QueueSize(std::string((*opt).value))));
+        (*opt).processed = true;
     }
     if (auto opt {config.Find("Delay")}; opt)
     {
-        m_channelHelper.SetChannelAttribute("Delay", TimeValue(Time(std::string(*opt))));
+        m_channelHelper.SetChannelAttribute("Delay", TimeValue(Time(std::string((*opt).value))));
+        (*opt).processed = true;
     }
 }
 
@@ -154,15 +161,17 @@ E2ESimpleChannel::Connect(Ptr<E2EComponent> root)
 {
     auto leftNodeId {m_config.Find("LeftNode")};
     NS_ABORT_MSG_UNLESS(leftNodeId, "No left node for channel " << GetId() << " given");
+    (*leftNodeId).processed = true;
     auto rightNodeId {m_config.Find("RightNode")};
     NS_ABORT_MSG_UNLESS(rightNodeId, "No right node for channel " << GetId() << " given");
+    (*rightNodeId).processed = true;
 
-    auto leftNode {root->GetE2EComponent<E2ETopologyNode>(*leftNodeId)};
+    auto leftNode {root->GetE2EComponent<E2ETopologyNode>((*leftNodeId).value)};
     NS_ABORT_MSG_UNLESS(leftNode,
-        "Left node " << *leftNodeId << " for channel " << GetId() << " not found");
-    auto rightNode {root->GetE2EComponent<E2ETopologyNode>(*rightNodeId)};
+        "Left node " << (*leftNodeId).value << " for channel " << GetId() << " not found");
+    auto rightNode {root->GetE2EComponent<E2ETopologyNode>((*rightNodeId).value)};
     NS_ABORT_MSG_UNLESS(rightNode,
-        "Right node " << *rightNodeId << " for channel " << GetId() << " not found");
+        "Right node " << (*rightNodeId).value << " for channel " << GetId() << " not found");
 
     NodeContainer nodes;
     nodes.Add((*leftNode)->GetNode());
