@@ -46,13 +46,9 @@ E2ENetwork::CreateNetwork(const E2EConfig& config)
     std::string_view type {(*type_opt).value};
     (*type_opt).processed = true;
 
-    if (type == "NetIf")
+    if (type == "Simbricks")
     {
-        return Create<E2ENetworkNetIf>(config);
-    }
-    else if (type == "NicIf")
-    {
-        return Create<E2ENetworkNicIf>(config);
+        return Create<E2ENetworkSimbricks>(config);
     }
     else
     {
@@ -66,7 +62,7 @@ E2ENetwork::GetNetDevice()
     return m_netDevice;
 }
 
-E2ENetworkNetIf::E2ENetworkNetIf(const E2EConfig& config) : E2ENetwork(config)
+E2ENetworkSimbricks::E2ENetworkSimbricks(const E2EConfig& config) : E2ENetwork(config)
 {
     Ptr<simbricks::SimbricksNetDevice> netDevice =
       CreateObject<simbricks::SimbricksNetDevice>();
@@ -85,29 +81,6 @@ E2ENetworkNetIf::E2ENetworkNetIf(const E2EConfig& config) : E2ENetwork(config)
     netDevice->Start();
 
     m_netDevice = netDevice;
-}
-
-E2ENetworkNicIf::E2ENetworkNicIf(const E2EConfig& config) : E2ENetwork(config)
-{
-    Ptr<simbricks::SimbricksNetDevice> netDevice =
-      CreateObject<simbricks::SimbricksNetDevice>();
-    if (not config.SetAttrIfContained<StringValue, std::string>(netDevice,
-        "UnixSocket", "UnixSocket"))
-    {
-        NS_LOG_WARN("No Unix socket path for Simbricks host '" << GetId() << "' given.");
-    }
-    config.SetAttrIfContained<TimeValue, Time>(netDevice, "SyncDelay", "SyncDelay");
-    config.SetAttrIfContained<TimeValue, Time>(netDevice, "PollDelay", "PollDelay");
-    config.SetAttrIfContained<TimeValue, Time>(netDevice, "EthLatency", "EthLatency");
-    config.SetAttrIfContained<IntegerValue, int>(netDevice, "Sync", "Sync");
-    config.SetAttrIfContained<StringValue, std::string>(netDevice, "ShmPath", "ShmPath");
-
-    netDevice->SetAttribute("Listen", BooleanValue(true));
-
-    netDevice->Start();
-
-    m_netDevice = netDevice;
-
 }
 
 E2ENetworkTrunk::E2ENetworkTrunk(const E2EConfig& config) : E2EComponent(config)

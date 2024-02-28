@@ -49,16 +49,10 @@ class E2ENetwork : public E2EComponent
     Ptr<NetDevice> m_netDevice;
 };
 
-class E2ENetworkNetIf : public E2ENetwork
+class E2ENetworkSimbricks : public E2ENetwork
 {
   public:
-    E2ENetworkNetIf(const E2EConfig &config);
-};
-
-class E2ENetworkNicIf : public E2ENetwork
-{
-  public:
-    E2ENetworkNicIf(const E2EConfig &config);
+    E2ENetworkSimbricks(const E2EConfig &config);
 };
 
 class E2ENetworkTrunk : public E2EComponent
