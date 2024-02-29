@@ -46,7 +46,7 @@ Ptr<E2ETopologyNode>
 E2ETopologyNode::CreateTopologyNode(const E2EConfig& config)
 {
     auto type_opt {config.Find("Type")};
-    NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Topology node has no type");
+    NS_ABORT_MSG_UNLESS(type_opt, "Topology node has no type");
     std::string_view type {(*type_opt).value};
     (*type_opt).processed = true;
 
@@ -120,7 +120,7 @@ Ptr<E2ETopologyChannel>
 E2ETopologyChannel::CreateTopologyChannel(const E2EConfig& config)
 {
     auto type_opt {config.Find("Type")};
-    NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Topology channel has no type");
+    NS_ABORT_MSG_UNLESS(type_opt, "Topology channel has no type");
     std::string_view type {(*type_opt).value};
     (*type_opt).processed = true;
 

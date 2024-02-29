@@ -81,14 +81,14 @@ E2EConfig::GetArgs() const
     return m_parsedArgs;
 }
 
-std::optional<E2EConfigValue>
+const E2EConfigValue*
 E2EConfig::Find(std::string_view key) const
 {
     if (auto it = m_parsedArgs.find(key); it != m_parsedArgs.end())
     {
-        return it->second;
+        return &it->second;
     }
-    return {};
+    return nullptr;
 }
 
 void

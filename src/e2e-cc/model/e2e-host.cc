@@ -46,7 +46,7 @@ Ptr<E2EHost>
 E2EHost::CreateHost(const E2EConfig& config)
 {
     auto type_opt {config.Find("Type")};
-    NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Host has no type");
+    NS_ABORT_MSG_UNLESS(type_opt, "Host has no type");
     std::string_view type {(*type_opt).value};
     (*type_opt).processed = true;
 
