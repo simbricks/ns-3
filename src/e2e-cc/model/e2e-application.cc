@@ -51,7 +51,7 @@ Ptr<E2EApplication>
 E2EApplication::CreateApplication(const E2EConfig& config)
 {
     auto type_opt {config.Find("Type")};
-    NS_ABORT_MSG_UNLESS(type_opt.has_value(), "Application has no type");
+    NS_ABORT_MSG_UNLESS(type_opt, "Application has no type");
     std::string_view type {(*type_opt).value};
     (*type_opt).processed = true;
 

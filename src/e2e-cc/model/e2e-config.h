@@ -70,7 +70,7 @@ class E2EConfig
     const_iterator cend() const;
 
     const args_type& GetArgs() const;
-    std::optional<E2EConfigValue> Find(std::string_view key) const;
+    const E2EConfigValue* Find(std::string_view key) const;
 
     void SetAttr(Ptr<Object> obj) const;
     void SetFactory(ObjectFactory& factory) const;
