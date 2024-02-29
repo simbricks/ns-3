@@ -34,17 +34,13 @@ namespace ns3
 
 NS_LOG_COMPONENT_DEFINE("E2EApplication");
 
-E2EApplication::E2EApplication(const E2EConfig& config, const std::string& type_id)
+E2EApplication::E2EApplication(const E2EConfig& config)
     : E2EComponent(config)
 {
     NS_ABORT_MSG_IF(GetId().size() == 0, "Application has no id");
     NS_ABORT_MSG_IF(GetIdPath().size() != 3,
         "Application '" << GetId() << "' has invalid path length of " << GetIdPath().size());
     NS_ABORT_MSG_IF(GetType().size() == 0, "Application '" << GetId() << "' has no type");
-
-    m_factory.SetTypeId(type_id);
-    config.SetFactoryIfContained<TimeValue, Time>(m_factory, "StartTime", "StartTime");
-    config.SetFactoryIfContained<TimeValue, Time>(m_factory, "StopTime", "StopTime");
 }
 
 Ptr<E2EApplication>
@@ -67,6 +63,10 @@ E2EApplication::CreateApplication(const E2EConfig& config)
     {
         return Create<E2EOnOffApp>(config);
     }
+    else if (type == "Generic")
+    {
+        return Create<E2EGenericApplication>(config);
+    }
     else
     {
         NS_ABORT_MSG("Unkown application type '" << type << "'");
@@ -78,8 +78,20 @@ Ptr<Application> E2EApplication::GetApplication()
     return m_application;
 }
 
-E2EPacketSink::E2EPacketSink(const E2EConfig& config) : E2EApplication(config, "ns3::PacketSink")
+E2EGenericApplication::E2EGenericApplication(const E2EConfig& config) : E2EApplication(config)
 {
+    auto typeId = config.Find("TypeId");
+    NS_ABORT_MSG_UNLESS(typeId, "Generic application does not contain a TypeId");
+    typeId->processed = true;
+    m_factory.SetTypeId(std::string(typeId->value));
+
+    config.SetFactory(m_factory);
+    m_application = m_factory.Create<Application>();
+}
+
+E2EPacketSink::E2EPacketSink(const E2EConfig& config) : E2EApplication(config)
+{
+    m_factory.SetTypeId("ns3::PacketSink");
     if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
         "Protocol", "Protocol"))
     {
@@ -90,6 +102,7 @@ E2EPacketSink::E2EPacketSink(const E2EConfig& config) : E2EApplication(config, "
     {
         NS_ABORT_MSG("Packet sink '" << GetId() << "' requires a local address");
     }
+    config.SetFactory(m_factory);
     m_application = m_factory.Create<Application>();
 }
 
@@ -118,9 +131,9 @@ E2EPacketSink::AddProbe(const E2EConfig& config)
     }
 }
 
-E2EBulkSender::E2EBulkSender(const E2EConfig& config)
-    : E2EApplication(config, "ns3::BulkSendApplication")
+E2EBulkSender::E2EBulkSender(const E2EConfig& config) : E2EApplication(config)
 {
+    m_factory.SetTypeId("ns3::BulkSendApplication");
     if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
         "Protocol", "Protocol"))
     {
@@ -133,6 +146,7 @@ E2EBulkSender::E2EBulkSender(const E2EConfig& config)
     }
     config.SetFactoryIfContained<UintegerValue, unsigned>(m_factory, "SendSize", "SendSize");
     config.SetFactoryIfContained<UintegerValue, unsigned>(m_factory, "MaxBytes", "MaxBytes");
+    config.SetFactory(m_factory);
     m_application = m_factory.Create<Application>();
 }
 
@@ -173,8 +187,9 @@ E2EBulkSender::AddProbe(const E2EConfig& config)
     }
 }
 
-E2EOnOffApp::E2EOnOffApp(const E2EConfig& config) : E2EApplication(config, "ns3::OnOffApplication")
+E2EOnOffApp::E2EOnOffApp(const E2EConfig& config) : E2EApplication(config)
 {
+    m_factory.SetTypeId("ns3::OnOffApplication");
     if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
         "Protocol", "Protocol"))
     {
@@ -190,6 +205,7 @@ E2EOnOffApp::E2EOnOffApp(const E2EConfig& config) : E2EApplication(config, "ns3:
     config.SetFactoryIfContained<UintegerValue, unsigned>(m_factory, "PacketSize", "PacketSize");
     config.SetFactoryIfContained<StringValue, std::string>(m_factory, "OnTime", "OnTime");
     config.SetFactoryIfContained<StringValue, std::string>(m_factory, "OffTime", "OffTime");
+    config.SetFactory(m_factory);
     
     m_application = m_factory.Create<Application>();
 }
