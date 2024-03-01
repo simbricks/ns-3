@@ -73,24 +73,24 @@ class E2EConfig
     const args_type& GetArgs() const;
     const E2EConfigValue* Find(std::string_view key) const;
 
-    void SetAttr(Ptr<Object> obj) const;
-    void SetFactory(ObjectFactory& factory) const;
+    void SetAttr(Ptr<Object> obj, bool processed = true) const;
+    void SetFactory(ObjectFactory& factory, bool processed = true) const;
 
     template<typename R, typename T, typename U>
-    void Set(Callback<R, T, U> callback) const;
+    void Set(Callback<R, T, U> callback, bool processed = true) const;
     template<typename R, typename T, typename U>
-    void Set(Callback<R, T, U> callback, config_type& configs) const;
+    void Set(Callback<R, T, U> callback, config_type& configs, bool processed = true) const;
 
     std::unordered_map<std::string_view, config_type>
     ParseCategories() const;
 
     template<typename T, typename U>
     bool SetAttrIfContained(Ptr<Object> obj, std::string_view mapKey,
-        const std::string& attributeKey) const;
+        const std::string& attributeKey, bool processed = true) const;
 
     template<typename T, typename U>
     bool SetFactoryIfContained(ObjectFactory &factory, std::string_view mapKey,
-        const std::string& attributeKey) const;
+        const std::string& attributeKey, bool processed = true) const;
 
     static int64_t ConvertArgToInteger(const std::string &arg);
     static uint64_t ConvertArgToUInteger(const std::string &arg);
@@ -105,7 +105,7 @@ class E2EConfig
 
 template<typename R, typename T, typename U>
 void
-E2EConfig::Set(Callback<R, T, U> callback) const
+E2EConfig::Set(Callback<R, T, U> callback, bool processed) const
 {
     for (auto& config : m_parsedArgs)
     {
@@ -127,13 +127,13 @@ E2EConfig::Set(Callback<R, T, U> callback) const
                                      << config.second.type);
             callback(std::string(config.first), *val);
         }
-        config.second.processed = true;
+        config.second.processed = processed;
     }
 }
 
 template<typename R, typename T, typename U>
 void
-E2EConfig::Set(Callback<R, T, U> callback, E2EConfig::config_type& configs) const
+E2EConfig::Set(Callback<R, T, U> callback, E2EConfig::config_type& configs, bool processed) const
 {
     for (auto& config : configs)
     {
@@ -155,7 +155,7 @@ E2EConfig::Set(Callback<R, T, U> callback, E2EConfig::config_type& configs) cons
                                      << config.second->type);
             callback(std::string(config.first), *val);
         }
-        config.second->processed = true;
+        config.second->processed = processed;
     }
 }
 
@@ -163,7 +163,8 @@ template <typename T, typename U>
 inline bool
 E2EConfig::SetAttrIfContained(Ptr<Object> obj,
                               std::string_view mapKey,
-                              const std::string& attributeKey) const
+                              const std::string& attributeKey,
+                              bool processed) const
 {
     if (auto it = m_parsedArgs.find(mapKey); it != m_parsedArgs.end())
     {
@@ -201,7 +202,7 @@ E2EConfig::SetAttrIfContained(Ptr<Object> obj,
         {
             obj->SetAttribute(attributeKey, T(U(std::string(attributeValue))));
         }
-        it->second.processed = true;
+        it->second.processed = processed;
         return true;
     }
     return false;
@@ -211,7 +212,8 @@ template <typename T, typename U>
 inline bool
 E2EConfig::SetFactoryIfContained(ObjectFactory& factory,
                                  std::string_view mapKey,
-                                 const std::string& attributeKey) const
+                                 const std::string& attributeKey,
+                                 bool processed) const
 {
     if (auto it = m_parsedArgs.find(mapKey); it != m_parsedArgs.end())
     {
@@ -249,7 +251,7 @@ E2EConfig::SetFactoryIfContained(ObjectFactory& factory,
         {
             factory.Set(attributeKey, T(U(std::string(attributeValue))));
         }
-        it->second.processed = true;
+        it->second.processed = processed;
         return true;
     }
     return false;
