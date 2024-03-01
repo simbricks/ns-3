@@ -92,7 +92,7 @@ E2EConfig::Find(std::string_view key) const
 }
 
 void
-E2EConfig::SetAttr(Ptr<Object> obj) const
+E2EConfig::SetAttr(Ptr<Object> obj, bool processed) const
 {
     for (auto& config : m_parsedArgs)
     {
@@ -115,12 +115,12 @@ E2EConfig::SetAttr(Ptr<Object> obj) const
                                      << config.second.type);
             obj->SetAttribute(std::string(config.first), *val);
         }
-        config.second.processed = true;
+        config.second.processed = processed;
     }
 }
 
 void
-E2EConfig::SetFactory(ObjectFactory& factory) const
+E2EConfig::SetFactory(ObjectFactory& factory, bool processed) const
 {
     for (auto& config : m_parsedArgs)
     {
@@ -142,7 +142,7 @@ E2EConfig::SetFactory(ObjectFactory& factory) const
                                      << config.second.type);
             factory.Set(std::string(config.first), *val);
         }
-        config.second.processed = true;
+        config.second.processed = processed;
     }
 }
 
