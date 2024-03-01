@@ -57,7 +57,7 @@ E2EComponent::GetId() const
 std::string_view
 E2EComponent::GetComponentId() const
 {
-    if (m_idPath.size() > 0)
+    if (not m_idPath.empty())
     {
         return m_idPath.back();
     }
@@ -104,7 +104,7 @@ E2EComponent::SplitIdPath(std::string_view id)
     std::vector<std::string_view> idPath;
     std::string_view path {id};
 
-    while (path.size() > 0)
+    while (not path.empty())
     {
         std::string_view part {path};
         auto pos = part.find('/');

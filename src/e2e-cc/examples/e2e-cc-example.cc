@@ -90,7 +90,7 @@ main(int argc, char* argv[])
             auto orderIdStr = config.Find("OrderId");
             NS_ABORT_MSG_UNLESS(orderIdStr, "Trunk device does not contain an order id");
             (*orderIdStr).processed = true;
-            auto orderId = config.ConvertArgToInteger(std::string((*orderIdStr).value));
+            auto orderId = E2EConfig::ConvertArgToInteger(std::string((*orderIdStr).value));
             trunkDevices.emplace(orderId, &config);
         }
         else

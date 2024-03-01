@@ -65,7 +65,7 @@ class E2ESwitchNode : public E2ETopologyNode
     E2ESwitchNode(const E2EConfig& config);
 
     void AddHost(Ptr<E2EHost> host) override;
-    void AddNetwork(Ptr<E2ENetwork> network);
+    void AddNetwork(Ptr<E2ENetwork> network) override;
     void AddChannel(Ptr<NetDevice> channelDevice) override;
 
   private:

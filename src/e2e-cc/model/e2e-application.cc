@@ -37,10 +37,10 @@ NS_LOG_COMPONENT_DEFINE("E2EApplication");
 E2EApplication::E2EApplication(const E2EConfig& config)
     : E2EComponent(config)
 {
-    NS_ABORT_MSG_IF(GetId().size() == 0, "Application has no id");
+    NS_ABORT_MSG_IF(GetId().empty(), "Application has no id");
     NS_ABORT_MSG_IF(GetIdPath().size() != 3,
         "Application '" << GetId() << "' has invalid path length of " << GetIdPath().size());
-    NS_ABORT_MSG_IF(GetType().size() == 0, "Application '" << GetId() << "' has no type");
+    NS_ABORT_MSG_IF(GetType().empty(), "Application '" << GetId() << "' has no type");
 }
 
 Ptr<E2EApplication>

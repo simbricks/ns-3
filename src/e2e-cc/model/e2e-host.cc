@@ -36,10 +36,10 @@ NS_LOG_COMPONENT_DEFINE("E2EHost");
 
 E2EHost::E2EHost(const E2EConfig& config) : E2EComponent(config)
 {
-    NS_ABORT_MSG_IF(GetId().size() == 0, "Host has no id");
+    NS_ABORT_MSG_IF(GetId().empty(), "Host has no id");
     NS_ABORT_MSG_IF(GetIdPath().size() != 2,
         "Host '" << GetId() << "' has invalid path length of " << GetIdPath().size());
-    NS_ABORT_MSG_IF(GetType().size() == 0, "Host '" << GetId() << "' has no type");
+    NS_ABORT_MSG_IF(GetType().empty(), "Host '" << GetId() << "' has no type");
 }
 
 Ptr<E2EHost>
