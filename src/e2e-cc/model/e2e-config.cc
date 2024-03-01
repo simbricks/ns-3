@@ -244,7 +244,7 @@ E2EConfig::SplitArgs()
         if (pos != std::string_view::npos)
         {
             NS_ABORT_MSG_UNLESS(key.back() == ')', "Illformed key with type, missing ')': " << key);
-            type = key.substr(1, key.size() - 2);
+            type = key.substr(pos + 1, key.size() - pos - 2);
             key.remove_suffix(key.size() - pos);
         }
 
