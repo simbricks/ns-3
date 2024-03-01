@@ -61,6 +61,7 @@ class E2EConfig
 
     using iterator = args_type::iterator;
     using const_iterator = args_type::const_iterator;
+    using config_type = std::vector<std::pair<std::string_view, const E2EConfigValue*>>;
 
     iterator begin();
     const_iterator begin() const;
@@ -74,6 +75,14 @@ class E2EConfig
 
     void SetAttr(Ptr<Object> obj) const;
     void SetFactory(ObjectFactory& factory) const;
+
+    template<typename R, typename T, typename U>
+    void Set(Callback<R, T, U> callback) const;
+    template<typename R, typename T, typename U>
+    void Set(Callback<R, T, U> callback, config_type& configs) const;
+
+    std::unordered_map<std::string_view, config_type>
+    ParseCategories() const;
 
     template<typename T, typename U>
     bool SetAttrIfContained(Ptr<Object> obj, std::string_view mapKey,
@@ -93,6 +102,62 @@ class E2EConfig
     void SplitArgs();
     Ptr<AttributeValue> ResolveType(std::string_view type, std::string_view value) const;
 };
+
+template<typename R, typename T, typename U>
+void
+E2EConfig::Set(Callback<R, T, U> callback) const
+{
+    for (auto& config : m_parsedArgs)
+    {
+        if (config.second.processed)
+        {
+            // this element has already been processed
+            continue;
+        }
+        if (config.second.type.empty())
+        {
+            callback(std::string(config.first), StringValue(std::string(config.second.value)));
+        }
+        else
+        {
+            Ptr<AttributeValue> val = ResolveType(config.second.type, config.second.value);
+            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
+                                     << config.second.value
+                                     << " with type "
+                                     << config.second.type);
+            callback(std::string(config.first), *val);
+        }
+        config.second.processed = true;
+    }
+}
+
+template<typename R, typename T, typename U>
+void
+E2EConfig::Set(Callback<R, T, U> callback, E2EConfig::config_type& configs) const
+{
+    for (auto& config : configs)
+    {
+        if (config.second->processed)
+        {
+            // this element has already been processed
+            continue;
+        }
+        if (config.second->type.empty())
+        {
+            callback(std::string(config.first), StringValue(std::string(config.second->value)));
+        }
+        else
+        {
+            Ptr<AttributeValue> val = ResolveType(config.second->type, config.second->value);
+            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
+                                     << config.second->value
+                                     << " with type "
+                                     << config.second->type);
+            callback(std::string(config.first), *val);
+        }
+        config.second->processed = true;
+    }
+}
 
 template <typename T, typename U>
 inline bool

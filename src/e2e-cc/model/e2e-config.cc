@@ -146,6 +146,32 @@ E2EConfig::SetFactory(ObjectFactory& factory) const
     }
 }
 
+std::unordered_map<std::string_view, E2EConfig::config_type>
+E2EConfig::ParseCategories() const
+{
+    std::unordered_map<std::string_view, E2EConfig::config_type> mapping;
+    for (auto& config : m_parsedArgs)
+    {
+        std::string_view key = config.first;
+        auto pos = key.find('-');
+        if (pos == std::string_view::npos)
+        {
+            continue;
+        }
+        std::string_view category = key.substr(0, pos);
+        key.remove_prefix(pos + 1);
+        if (auto it {mapping.find(category)}; it != mapping.end())
+        {
+            it->second.emplace_back(key, &config.second);
+        }
+        else
+        {
+            mapping.emplace(category, E2EConfig::config_type({{key, &config.second}}));
+        }
+    }
+    return mapping;
+}
+
 int64_t
 E2EConfig::ConvertArgToInteger(const std::string& arg)
 {
