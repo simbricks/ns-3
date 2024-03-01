@@ -35,8 +35,8 @@ NS_LOG_COMPONENT_DEFINE("E2EProbe");
 
 E2EProbe::E2EProbe(const E2EConfig& config) : E2EComponent(config)
 {
-    NS_ABORT_MSG_IF(GetId().size() == 0, "Probe has no id");
-    NS_ABORT_MSG_IF(GetType().size() == 0, "Probe '" << GetId() << "' has no type");
+    NS_ABORT_MSG_IF(GetId().empty(), "Probe has no id");
+    NS_ABORT_MSG_IF(GetType().empty(), "Probe '" << GetId() << "' has no type");
 }
 
 void

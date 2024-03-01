@@ -229,7 +229,7 @@ E2EConfig::SplitArgs()
 {
     std::string_view arg_view {m_rawArgs};
 
-    while (arg_view.size() > 0)
+    while (not arg_view.empty())
     {
         // extract key
         std::string_view key {arg_view};
@@ -320,7 +320,7 @@ E2EConfigParser::ParseArguments(int argc, char* argv[])
         char buffer[BUFFER_SIZE];
         std::vector<std::string> args;
         // the first argument gets discarded by cmd.Parse since it expects it to be the program name
-        args.push_back("");
+        args.emplace_back("");
         std::ifstream file(p);
         std::ostringstream argBuffer;
         char currentDelimiter;
