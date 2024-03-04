@@ -75,6 +75,7 @@ E2ESwitchNode::E2ESwitchNode(const E2EConfig& config) : E2ETopologyNode(config)
         bridgeHelper.SetDeviceAttribute("Mtu", StringValue(std::string((*mtu).value)));
         (*mtu).processed = true;
     }
+    config.Set(MakeCallback(&BridgeHelper::SetDeviceAttribute, &bridgeHelper));
 
     NetDeviceContainer switchContainer = bridgeHelper.Install(m_node, NetDeviceContainer());
     m_switch = StaticCast<BridgeNetDevice>(switchContainer.Get(0));
@@ -134,25 +135,55 @@ E2ETopologyChannel::CreateTopologyChannel(const E2EConfig& config)
     }
 }
 
+static void
+SetQueue(SimpleNetDeviceHelper* helper,
+         const std::string& type,
+         const std::string& key,
+         const AttributeValue& val)
+{
+    helper->SetQueue(type, key, val);
+}
+
 E2ESimpleChannel::E2ESimpleChannel(const E2EConfig& config)
     : E2ETopologyChannel(config)
 {
-    if (auto opt {config.Find("DataRate")}; opt)
+    auto categories {config.ParseCategories()};
+    if (auto it {categories.find("Device")}; it != categories.end())
     {
-        m_channelHelper.SetDeviceAttribute("DataRate",
-            DataRateValue(DataRate(std::string((*opt).value))));
-        (*opt).processed = true;
+        config.Set(MakeCallback(&SimpleNetDeviceHelper::SetDeviceAttribute, &m_channelHelper),
+                   it->second);
     }
-    if (auto opt {config.Find("QueueSize")}; opt)
+
+    std::string_view channelType;
+    if (auto opt {config.Find("ChannelType")}; opt)
     {
-        m_channelHelper.SetQueue("ns3::DropTailQueue", "MaxSize",
-            QueueSizeValue(QueueSize(std::string((*opt).value))));
-        (*opt).processed = true;
+        channelType = opt->value;
+        opt->processed = true;
     }
-    if (auto opt {config.Find("Delay")}; opt)
+    else
     {
-        m_channelHelper.SetChannelAttribute("Delay", TimeValue(Time(std::string((*opt).value))));
-        (*opt).processed = true;
+        channelType = "ns3::SimpleChannel";
+    }
+    m_channelHelper.SetChannel(std::string(channelType));
+    if (auto it {categories.find("Channel")}; it != categories.end())
+    {
+        config.Set(MakeCallback(&SimpleNetDeviceHelper::SetChannelAttribute, &m_channelHelper),
+                   it->second);
+    }
+
+    std::string queueType;
+    if (auto opt {config.Find("QueueType")}; opt)
+    {
+        queueType = opt->value;
+        opt->processed = true;
+    }
+    else
+    {
+        queueType = "ns3::DropTailQueue";
+    }
+    if (auto it {categories.find("Queue")}; it != categories.end())
+    {
+        config.Set(MakeBoundCallback(&SetQueue, &m_channelHelper, queueType), it->second);
     }
 }
 

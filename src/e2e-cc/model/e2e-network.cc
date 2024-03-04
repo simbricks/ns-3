@@ -77,6 +77,7 @@ E2ENetworkSimbricks::E2ENetworkSimbricks(const E2EConfig& config) : E2ENetwork(c
     config.SetAttrIfContained<IntegerValue, int>(netDevice, "Sync", "Sync");
     config.SetAttrIfContained<StringValue, std::string>(netDevice, "Listen", "Listen");
     config.SetAttrIfContained<StringValue, std::string>(netDevice, "ShmPath", "ShmPath");
+    config.SetAttr(netDevice);
 
     netDevice->Start();
 
@@ -102,6 +103,7 @@ E2ENetworkTrunk::E2ENetworkTrunk(const E2EConfig& config) : E2EComponent(config)
     config.SetAttrIfContained<IntegerValue, int>(m_trunk, "Sync", "Sync");
     config.SetAttrIfContained<StringValue, std::string>(m_trunk, "Listen", "Listen");
     config.SetAttrIfContained<StringValue, std::string>(m_trunk, "ShmPath", "ShmPath");
+    config.SetAttr(m_trunk);
 
     m_trunk->Start();
 }

@@ -146,6 +146,33 @@ E2EConfig::SetFactory(ObjectFactory& factory, bool processed) const
     }
 }
 
+void
+E2EConfig::SetFactory(ObjectFactory& factory, config_type& configs, bool processed) const
+{
+    for (auto& config : configs)
+    {
+        if (config.second->processed)
+        {
+            // this element has already been processed
+            continue;
+        }
+        if (config.second->type.empty())
+        {
+            factory.Set(std::string(config.first), StringValue(std::string(config.second->value)));
+        }
+        else
+        {
+            Ptr<AttributeValue> val = ResolveType(config.second->type, config.second->value);
+            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
+                                     << config.second->value
+                                     << " with type "
+                                     << config.second->type);
+            factory.Set(std::string(config.first), *val);
+        }
+        config.second->processed = processed;
+    }
+}
+
 std::unordered_map<std::string_view, E2EConfig::config_type>
 E2EConfig::ParseCategories() const
 {
