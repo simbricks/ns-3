@@ -96,6 +96,7 @@ E2ESimbricksHost::E2ESimbricksHost(const E2EConfig& config) : E2EHost(config)
     config.SetAttrIfContained<TimeValue, Time>(netDevice, "PollDelay", "PollDelay");
     config.SetAttrIfContained<TimeValue, Time>(netDevice, "EthLatency", "EthLatency");
     config.SetAttrIfContained<IntegerValue, int>(netDevice, "Sync", "Sync");
+    config.SetAttr(netDevice);
 
     netDevice->Start();
 
@@ -105,20 +106,46 @@ E2ESimbricksHost::E2ESimbricksHost(const E2EConfig& config) : E2EHost(config)
 E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
 {
     m_node = CreateObject<Node>();
+    auto categories {config.ParseCategories()};
 
     ObjectFactory deviceFactory;
     deviceFactory.SetTypeId("ns3::SimpleNetDevice");
-    config.SetFactoryIfContained<DataRateValue, DataRate>(deviceFactory, "DataRate", "DataRate");
-    //Todo: is setting the mtu of SimpleNetDevice supported this way? No, it is not!
-    //config.SetFactoryIfContained<UintegerValue, unsigned>(deviceFactory, "Mtu", "Mtu");
+    if (auto it {categories.find("Device")}; it != categories.end())
+    {
+        config.SetFactory(deviceFactory, it->second);
+    }
 
     ObjectFactory queueFactory;
-    queueFactory.SetTypeId("ns3::DropTailQueue<Packet>");
-    config.SetFactoryIfContained<QueueSizeValue, QueueSize>(queueFactory, "QueueSize", "MaxSize");
+    if (auto opt {config.Find("QueueType")}; opt)
+    {
+        std::string queueType {opt->value};
+        QueueBase::AppendItemTypeIfNotPresent(queueType, "Packet");
+        queueFactory.SetTypeId(queueType);
+        opt->processed = true;
+    }
+    else
+    {
+        queueFactory.SetTypeId("ns3::DropTailQueue<Packet>");
+    }
+    if (auto it {categories.find("Queue")}; it != categories.end())
+    {
+        config.SetFactory(queueFactory, it->second);
+    }
 
     ObjectFactory channelFactory;
-    channelFactory.SetTypeId("ns3::SimpleChannel");
-    config.SetFactoryIfContained<TimeValue, Time>(channelFactory, "Delay", "Delay");
+    if (auto opt {config.Find("ChannelType")}; opt)
+    {
+        channelFactory.SetTypeId(std::string(opt->value));
+        opt->processed = true;
+    }
+    else
+    {
+        channelFactory.SetTypeId("ns3::SimpleChannel");
+    }
+    if (auto it {categories.find("Channel")}; it != categories.end())
+    {
+        config.SetFactory(channelFactory, it->second);
+    }
 
     // Create net devices
     Ptr<SimpleNetDevice> netDevice = deviceFactory.Create<SimpleNetDevice>();

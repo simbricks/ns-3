@@ -75,6 +75,7 @@ class E2EConfig
 
     void SetAttr(Ptr<Object> obj, bool processed = true) const;
     void SetFactory(ObjectFactory& factory, bool processed = true) const;
+    void SetFactory(ObjectFactory& factory, config_type& configs, bool processed = true) const;
 
     template<typename R, typename T, typename U>
     void Set(Callback<R, T, U> callback, bool processed = true) const;
