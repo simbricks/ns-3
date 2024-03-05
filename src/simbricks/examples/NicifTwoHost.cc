@@ -82,7 +82,7 @@ int main (int argc, char *argv[]){
 
     Ptr<simbricks::SimbricksNetDevice> txDev;
     txDev = CreateObject<simbricks::SimbricksNetDevice> ();
-    txDev->SetAttribute("UnixSocket", StringValue(uxSocketPath.c_str()));
+    txDev->SetAttribute("UnixSocket", StringValue(uxSocketPath));
     //txDev->SetAttribute("Shm", StringValue(shmPath));
     txDev->SetAttribute("SyncDelay", TimeValue(PicoSeconds(syncDelay)));
     txDev->SetAttribute("PollDelay", TimeValue(PicoSeconds(pollDelay)));

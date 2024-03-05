@@ -44,56 +44,56 @@ class SimbricksNetDevice :
                                      SimbricksProtoNetMsg>::Interface
 {
 public:
-  static TypeId GetTypeId (void);
+  static TypeId GetTypeId ();
 
   SimbricksNetDevice ();
-  virtual ~SimbricksNetDevice ();
+  ~SimbricksNetDevice () override;
 
   void Start ();
   void Stop ();
 
-  virtual void SetIfIndex (const uint32_t index) override;
-  virtual uint32_t GetIfIndex (void) const override;
+  void SetIfIndex (const uint32_t index) override;
+  uint32_t GetIfIndex () const override;
 
-  virtual Ptr<Channel> GetChannel (void) const override;
+  Ptr<Channel> GetChannel () const override;
 
-  virtual void SetAddress (Address address) override;
-  virtual Address GetAddress (void) const override;
+  void SetAddress (Address address) override;
+  Address GetAddress () const override;
 
-  virtual bool SetMtu (const uint16_t mtu) override;
-  virtual uint16_t GetMtu (void) const override;
+  bool SetMtu (const uint16_t mtu) override;
+  uint16_t GetMtu () const override;
 
-  virtual bool IsLinkUp (void) const override;
-  virtual void AddLinkChangeCallback (Callback<void> callback) override;
+  bool IsLinkUp () const override;
+  void AddLinkChangeCallback (Callback<void> callback) override;
 
-  virtual bool IsBroadcast (void) const override;
-  virtual Address GetBroadcast (void) const override;
-  virtual bool IsMulticast (void) const override;
-  virtual Address GetMulticast (Ipv4Address multicastGroup) const override;
-  virtual Address GetMulticast (Ipv6Address addr) const override;
+  bool IsBroadcast () const override;
+  Address GetBroadcast () const override;
+  bool IsMulticast () const override;
+  Address GetMulticast (Ipv4Address multicastGroup) const override;
+  Address GetMulticast (Ipv6Address addr) const override;
 
-  virtual bool IsBridge (void) const override;
-  virtual bool IsPointToPoint (void) const override;
+  bool IsBridge () const override;
+  bool IsPointToPoint () const override;
 
-  virtual bool Send (Ptr<Packet> packet, const Address& dest, uint16_t protocolNumber) override;
-  virtual bool SendFrom (Ptr<Packet> packet, const Address& source, const Address& dest, uint16_t protocolNumber) override;
+  bool Send (Ptr<Packet> packet, const Address& dest, uint16_t protocolNumber) override;
+  bool SendFrom (Ptr<Packet> packet, const Address& source, const Address& dest, uint16_t protocolNumber) override;
 
-  virtual Ptr<Node> GetNode (void) const override;
-  virtual void SetNode (Ptr<Node> node) override;
+  Ptr<Node> GetNode () const override;
+  void SetNode (Ptr<Node> node) override;
 
-  virtual bool NeedsArp (void) const override;
+  bool NeedsArp () const override;
 
-  virtual void SetReceiveCallback (ReceiveCallback cb) override;
-  virtual void SetPromiscReceiveCallback (PromiscReceiveCallback cb) override;
+  void SetReceiveCallback (ReceiveCallback cb) override;
+  void SetPromiscReceiveCallback (PromiscReceiveCallback cb) override;
 
-  virtual bool SupportsSendFrom (void) const override;
+  bool SupportsSendFrom () const override;
 
 protected:
-  virtual size_t introOutPrepare(void *data, size_t maxlen) override;
-  virtual void introInReceived(const void *data, size_t len) override;
-  virtual void initIfParams(SimbricksBaseIfParams &p) override;
-  virtual void handleInMsg(volatile SimbricksProtoNetMsg *msg) override;
-  virtual void peerTerminated() override;
+  size_t introOutPrepare(void *data, size_t maxlen) override;
+  void introInReceived(const void *data, size_t len) override;
+  void initIfParams(SimbricksBaseIfParams &p) override;
+  void handleInMsg(volatile SimbricksProtoNetMsg *msg) override;
+  void peerTerminated() override;
 
 private:
   // SimBricks base adapter

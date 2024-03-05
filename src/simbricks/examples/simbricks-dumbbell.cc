@@ -148,7 +148,7 @@ main (int argc, char *argv[])
   NS_LOG_INFO ("Create SimbricksDevices and add them to bridge");
   NS_LOG_INFO("simbricks path :" << simbricksLeftPaths[0]);
   
-  for (std::string cpp : simbricksLeftPaths) {
+  for (std::string& cpp : simbricksLeftPaths) {
     Ptr<simbricks::SimbricksNetDevice> device =
         CreateObject<simbricks::SimbricksNetDevice> ();
     device->SetAttribute ("UnixSocket", StringValue (cpp));
@@ -156,7 +156,7 @@ main (int argc, char *argv[])
     bridgeLeft->AddBridgePort (device);
     device->Start();
   }
-  for (std::string cpp : simbricksRightPaths) {
+  for (std::string& cpp : simbricksRightPaths) {
     Ptr<simbricks::SimbricksNetDevice> device =
         CreateObject<simbricks::SimbricksNetDevice> ();
     device->SetAttribute ("UnixSocket", StringValue (cpp));

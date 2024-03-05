@@ -45,9 +45,10 @@ namespace base {
 
 #define SIMBRICKS_PROFILE_ADAPTERS
 
-static inline uint64_t rdtsc(void)
+static inline uint64_t rdtsc()
 {
-  uint32_t eax, edx;
+  uint32_t eax;
+  uint32_t edx;
   asm volatile ("rdtsc" : "=a" (eax), "=d" (edx));
   return ((uint64_t) edx << 32) | eax;
 }
@@ -110,22 +111,22 @@ class Adapter
         rescheduleSyncTx = x;
     }
 
-    const char *getSocketPath() {
+    const char *getSocketPath() const {
         return params.sock_path;
     }
-    uint64_t getCyclesTxComm() {
+    uint64_t getCyclesTxComm() const {
         return cycles_tx_comm;
     }
-    uint64_t getCyclesTxBlock() {
+    uint64_t getCyclesTxBlock() const {
         return cycles_tx_block;
     }
-    uint64_t getCyclesTxSync() {
+    uint64_t getCyclesTxSync() const {
         return cycles_tx_sync;
     }
-    uint64_t getCyclesRxComm() {
+    uint64_t getCyclesRxComm() const {
         return cycles_rx_comm;
     }
-    uint64_t getCyclesRxBlock() {
+    uint64_t getCyclesRxBlock() const {
         return cycles_rx_block;
     }
 
@@ -149,15 +150,17 @@ class Adapter
         uint64_t block_tsc = start_tsc;
 #endif
         volatile union SimbricksProtoBaseMsg *msg;
-        if (terminated)
+        if (terminated) {
             return nullptr;
+        }
 
         do {
             msg = SimbricksBaseIfOutAlloc(&baseIf,
               Simulator::Now ().ToInteger (Time::PS));
 #ifdef SIMBRICKS_PROFILE_ADAPTERS
-            if (!msg)
+            if (!msg) {
               block_tsc = rdtsc();
+            }
 #endif
         } while (!msg);
 
@@ -196,24 +199,24 @@ class GenericBaseAdapter : public Adapter
   protected:
     Interface &intf;
 
-    virtual size_t introOutPrepare(void *data, size_t len) {
+    size_t introOutPrepare(void *data, size_t len) override {
         return intf.introOutPrepare(data, len);
     }
 
-    virtual void introInReceived(const void *data, size_t len) {
+    void introInReceived(const void *data, size_t len) override {
         intf.introInReceived(data, len);
     }
 
-    virtual void handleInMsg(volatile union SimbricksProtoBaseMsg *msg) {
+    void handleInMsg(volatile union SimbricksProtoBaseMsg *msg) override {
         intf.handleInMsg((volatile TMI *) msg);
     }
 
-    virtual void initIfParams(SimbricksBaseIfParams &p) {
+    void initIfParams(SimbricksBaseIfParams &p) override {
         Adapter::initIfParams(p);
         intf.initIfParams(p);
     }
 
-    virtual void peerTerminated() {
+    void peerTerminated() override {
       Adapter::peerTerminated();
       intf.peerTerminated();
     }
@@ -222,7 +225,7 @@ class GenericBaseAdapter : public Adapter
     GenericBaseAdapter(Interface &intf_)
       : Adapter(), intf(intf_) {}
 
-    virtual ~GenericBaseAdapter() = default;
+    ~GenericBaseAdapter() override = default;
 
     void inDone(volatile TMI *msg) {
         Adapter::inDone((volatile union SimbricksProtoBaseMsg *) msg);

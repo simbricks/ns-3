@@ -47,8 +47,11 @@ static void sigusr1_handler(int dummy)
   std::cout << "STATS: main_time=" << Simulator::Now ().ToInteger (Time::PS)
     << " tsc=" << rdtsc() << std::endl;
 
-  uint64_t tx_comm_cycles = 0, tx_block_cycles = 0, tx_sync_cycles = 0,
-      rx_comm_cycles = 0, rx_block_cycles = 0;
+  uint64_t tx_comm_cycles = 0;
+  uint64_t tx_block_cycles = 0;
+  uint64_t tx_sync_cycles = 0;
+  uint64_t rx_comm_cycles = 0;
+  uint64_t rx_block_cycles = 0;
 
   for (Adapter *a: mgr.ready) {
     std::cout << "  " << a->getSocketPath() << ":"
@@ -102,8 +105,9 @@ void InitManager::connected(Adapter &a)
     const unsigned max_handshake = 4069;
     std::vector<uint8_t> handshake(max_handshake);
     size_t len = a.introOutPrepare(handshake.data(), max_handshake);
-    if (SimbricksBaseIfIntroSend(&a.baseIf, handshake.data(), len) != 0)
+    if (SimbricksBaseIfIntroSend(&a.baseIf, handshake.data(), len) != 0) {
         NS_ABORT_MSG("SimbricksBaseIfIntroSend failed");
+    }
 }
 
 void InitManager::processEvents()
@@ -156,8 +160,9 @@ void InitManager::processEvents()
         i++;
     }
 
-    if (i == 0)
+    if (i == 0) {
         return;
+    }
 
     int ret = poll(pfds, i, -1);
     NS_ABORT_MSG_IF(ret < 0, "poll failed");
@@ -167,10 +172,12 @@ void InitManager::processEvents()
 
     for (int k = 0; k < ret; k++) {
         Adapter *a = as[k];
-        if (pfds[k].revents == 0)
+        if (pfds[k].revents == 0) {
             continue;
-        if ((pfds[k].revents & (~(POLLIN | POLLOUT))) != 0)
+        }
+        if ((pfds[k].revents & (~(POLLIN | POLLOUT))) != 0) {
             NS_ABORT_MSG("invalid revents");
+        }
 
         if (conn[k]) {
             int x = SimbricksBaseIfConnected(&a->baseIf);

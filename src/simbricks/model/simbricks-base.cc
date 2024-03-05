@@ -51,8 +51,9 @@ Adapter::Adapter()
 Adapter::~Adapter()
 {
     SimbricksBaseIfClose(&baseIf);
-    if (isListen)
+    if (isListen) {
         SimbricksBaseIfUnlink(&baseIf);
+    }
 
     if (pool) {
         SimbricksBaseIfSHMPoolUnlink(pool);
@@ -70,11 +71,12 @@ void Adapter::processInEvent()
     uint64_t now = curTick();
 
     /* run what we can */
-    while (poll(now));
+    while (poll(now)) {}
 
     /* if peer signaled terminated: no need to re-schedule */
-    if (terminated)
+    if (terminated) {
         return;
+    }
 
 #ifdef SIMBRICKS_PROFILE_ADAPTERS
     uint64_t block_tsc = cycles_rx_start_tsc;
@@ -90,8 +92,9 @@ void Adapter::processInEvent()
 #endif
         }
 
-        if (terminated)
+        if (terminated) {
             return;
+        }
 
         inEvent = Simulator::Schedule (PicoSeconds (nextTs - now),
             &Adapter::processInEvent, this);
@@ -131,8 +134,9 @@ void Adapter::processOutSyncEvent()
 
 void Adapter::rescheduleSync()
 {
-    if (terminated)
+    if (terminated) {
         return;
+    }
 
     Simulator::Cancel (outSyncEvent);
     uint64_t next_delay = SimbricksBaseIfOutNextSync(&baseIf) - curTick();
@@ -147,9 +151,10 @@ void Adapter::startEvent()
     InitManager::get().waitReady(*this);
   
     // schedule first sync to be sent immediately
-    if (sync)
+    if (sync) {
         outSyncEvent = Simulator::ScheduleNow (
           &Adapter::processOutSyncEvent, this);
+    }
     // next schedule poll event
     inEvent = Simulator::Schedule (PicoSeconds(1),
           &Adapter::processInEvent, this);
@@ -163,13 +168,15 @@ void Adapter::commonInit(const std::string &sock_path)
 
     params.sock_path = sock_path.c_str();
     params.blocking_conn = false;
-    if (sync)
+    if (sync) {
         params.sync_mode = kSimbricksBaseIfSyncRequired;
-    else
+    } else {
         params.sync_mode = kSimbricksBaseIfSyncDisabled;
+    }
 
-    if (SimbricksBaseIfInit(&baseIf, &params))
+    if (SimbricksBaseIfInit(&baseIf, &params)) {
         NS_ABORT_MSG ("base init failed");
+    }
 
     Simulator::ScheduleNow (&Adapter::startEvent, this);
 }
@@ -201,8 +208,9 @@ void Adapter::peerTerminated()
     NS_LOG_FUNCTION (this);
 
     terminated = true;
-    if (sync)
+    if (sync) {
       Simulator::Cancel (outSyncEvent);
+    }
 
     // poll event is currently being handled, and won't be re-scheduled
 }
@@ -214,8 +222,9 @@ void Adapter::connect(const std::string &sock_path)
 
     commonInit(sock_path);
 
-    if (SimbricksBaseIfConnect(&baseIf))
+    if (SimbricksBaseIfConnect(&baseIf)) {
         NS_ABORT_MSG ("connecting failed");
+    }
 
     // register this adapter for the rest of the initialization
     // see init_manager.hh for rationale
@@ -229,11 +238,13 @@ void Adapter::listen(const std::string &sock_path, const std::string &shm_path)
 
     pool = new SimbricksBaseIfSHMPool;
     if (SimbricksBaseIfSHMPoolCreate(pool, shm_path.c_str(),
-            SimbricksBaseIfSHMSize(&params)))
+            SimbricksBaseIfSHMSize(&params))) {
         NS_ABORT_MSG ("creating SHM pool failed");
+    }
 
-    if (SimbricksBaseIfListen(&baseIf, pool))
+    if (SimbricksBaseIfListen(&baseIf, pool)) {
         NS_ABORT_MSG ("listening failed");
+    }
 
     isListen = true;
 
@@ -246,8 +257,9 @@ void Adapter::Stop()
 {
     NS_LOG_FUNCTION (this);
 
-    if (sync)
+    if (sync) {
         Simulator::Cancel (outSyncEvent);
+    }
     Simulator::Cancel (inEvent);
 }
 
@@ -257,8 +269,9 @@ bool Adapter::poll(uint64_t now_ts)
 
     volatile union SimbricksProtoBaseMsg *msg =
         SimbricksBaseIfInPoll(&baseIf, now_ts);
-    if (!msg)
+    if (!msg) {
         return false;
+    }
 
     // don't pass sync messages to handle msg function
     bool handle = true;
@@ -276,8 +289,9 @@ bool Adapter::poll(uint64_t now_ts)
     cycles_rx_comm += rdtsc() - cycles_rx_start_tsc;
 #endif
 
-    if (handle)
+    if (handle) {
         handleInMsg(msg);
+    }
 
 #ifdef SIMBRICKS_PROFILE_ADAPTERS
     cycles_rx_start_tsc = rdtsc();

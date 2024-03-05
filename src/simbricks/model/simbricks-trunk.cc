@@ -43,7 +43,7 @@ extern "C" {
 
 NS_LOG_COMPONENT_DEFINE ("SimbricksTrunk");
 
-TypeId SimbricksTrunk::TrunkNetDev::GetTypeId (void)
+TypeId SimbricksTrunk::TrunkNetDev::GetTypeId ()
 {
   static TypeId tid = TypeId ("ns3::simbricks::SimbricksTrunk::TrunkNetDev")
     .SetParent<NetDevice> ()
@@ -53,7 +53,7 @@ TypeId SimbricksTrunk::TrunkNetDev::GetTypeId (void)
 }
 
 SimbricksTrunk::TrunkNetDev::TrunkNetDev (SimbricksTrunk& trunk_, uint8_t port_)
-  : trunk(trunk_), terminated(false), port(port_), m_mtu(1500), m_node(0)
+  : trunk(trunk_), terminated(false), port(port_), m_mtu(1500), m_node(nullptr)
 {
   NS_LOG_FUNCTION (this);
   // Nullifying callbacks explicitly is probably not needed
@@ -85,8 +85,9 @@ void SimbricksTrunk::TrunkNetDev::RxInContext (Ptr<Packet> packet)
   EthernetHeader header (false);
 
   // packet is shorter than header -> drop
-  if (packet->GetSize () < header.GetSerializedSize ())
+  if (packet->GetSize () < header.GetSerializedSize ()) {
     return;
+  }
 
   packet->RemoveHeader (header);
 
@@ -94,14 +95,15 @@ void SimbricksTrunk::TrunkNetDev::RxInContext (Ptr<Packet> packet)
   source = header.GetSource ();
   protocol = header.GetLengthType ();
 
-  if (header.GetDestination ().IsBroadcast ())
+  if (header.GetDestination ().IsBroadcast ()) {
     packetType = NS3_PACKET_BROADCAST;
-  else if (header.GetDestination ().IsGroup ())
+  } else if (header.GetDestination ().IsGroup ()) {
     packetType = NS3_PACKET_MULTICAST;
-  else if (destination == m_address)
+  } else if (destination == m_address) {
     packetType = NS3_PACKET_HOST;
-  else
+  } else {
     packetType = NS3_PACKET_OTHERHOST;
+  }
 
   if (!m_promiscRxCallback.IsNull ()) {
     m_promiscRxCallback (this, packet, protocol, source, destination,
@@ -119,16 +121,16 @@ void SimbricksTrunk::TrunkNetDev::SetIfIndex (const uint32_t index)
   m_ifIndex = index;
 }
 
-uint32_t SimbricksTrunk::TrunkNetDev::GetIfIndex (void) const
+uint32_t SimbricksTrunk::TrunkNetDev::GetIfIndex () const
 {
   NS_LOG_FUNCTION (this);
   return m_ifIndex;
 }
 
-Ptr<Channel> SimbricksTrunk::TrunkNetDev::GetChannel (void) const
+Ptr<Channel> SimbricksTrunk::TrunkNetDev::GetChannel () const
 {
   NS_LOG_FUNCTION (this);
-  return 0;
+  return nullptr;
 }
 
 void SimbricksTrunk::TrunkNetDev::SetAddress (Address address)
@@ -137,7 +139,7 @@ void SimbricksTrunk::TrunkNetDev::SetAddress (Address address)
   m_address = Mac48Address::ConvertFrom (address);
 }
 
-Address SimbricksTrunk::TrunkNetDev::GetAddress (void) const
+Address SimbricksTrunk::TrunkNetDev::GetAddress () const
 {
   NS_LOG_FUNCTION (this);
   return m_address;
@@ -150,13 +152,13 @@ bool SimbricksTrunk::TrunkNetDev::SetMtu (const uint16_t mtu)
   return true;
 }
 
-uint16_t SimbricksTrunk::TrunkNetDev::GetMtu (void) const
+uint16_t SimbricksTrunk::TrunkNetDev::GetMtu () const
 {
   NS_LOG_FUNCTION (this);
   return m_mtu;
 }
 
-bool SimbricksTrunk::TrunkNetDev::IsLinkUp (void) const
+bool SimbricksTrunk::TrunkNetDev::IsLinkUp () const
 {
   NS_LOG_FUNCTION (this);
   return true;
@@ -168,19 +170,19 @@ void SimbricksTrunk::TrunkNetDev::AddLinkChangeCallback (
   NS_LOG_FUNCTION (this);
 }
 
-bool SimbricksTrunk::TrunkNetDev::IsBroadcast (void) const
+bool SimbricksTrunk::TrunkNetDev::IsBroadcast () const
 {
   NS_LOG_FUNCTION (this);
   return true;
 }
 
-Address SimbricksTrunk::TrunkNetDev::GetBroadcast (void) const
+Address SimbricksTrunk::TrunkNetDev::GetBroadcast () const
 {
   NS_LOG_FUNCTION (this);
   return Mac48Address ("ff:ff:ff:ff:ff:ff");
 }
 
-bool SimbricksTrunk::TrunkNetDev::IsMulticast (void) const
+bool SimbricksTrunk::TrunkNetDev::IsMulticast () const
 {
   NS_LOG_FUNCTION (this);
   return true;
@@ -198,13 +200,13 @@ Address SimbricksTrunk::TrunkNetDev::GetMulticast (Ipv6Address addr) const
   return Mac48Address::GetMulticast (addr);
 }
 
-bool SimbricksTrunk::TrunkNetDev::IsBridge (void) const
+bool SimbricksTrunk::TrunkNetDev::IsBridge () const
 {
   NS_LOG_FUNCTION (this);
   return false;
 }
 
-bool SimbricksTrunk::TrunkNetDev::IsPointToPoint (void) const
+bool SimbricksTrunk::TrunkNetDev::IsPointToPoint () const
 {
   NS_LOG_FUNCTION (this);
   return false;
@@ -222,8 +224,9 @@ bool SimbricksTrunk::TrunkNetDev::SendFrom (Ptr<Packet> packet,
 {
   NS_LOG_FUNCTION (this << packet << source << dest << protocolNumber);
 
-  if (terminated)
+  if (terminated) {
       return false;
+  }
 
   EthernetHeader header (false);
   header.SetSource (Mac48Address::ConvertFrom (source));
@@ -235,7 +238,7 @@ bool SimbricksTrunk::TrunkNetDev::SendFrom (Ptr<Packet> packet,
   return true;
 }
 
-Ptr<Node> SimbricksTrunk::TrunkNetDev::GetNode (void) const
+Ptr<Node> SimbricksTrunk::TrunkNetDev::GetNode () const
 {
   NS_LOG_FUNCTION (this);
   return m_node;
@@ -247,7 +250,7 @@ void SimbricksTrunk::TrunkNetDev::SetNode (Ptr<Node> node)
   m_node = node;
 }
 
-bool SimbricksTrunk::TrunkNetDev::NeedsArp (void) const
+bool SimbricksTrunk::TrunkNetDev::NeedsArp () const
 {
   NS_LOG_FUNCTION (this);
   return true;
@@ -266,7 +269,7 @@ void SimbricksTrunk::TrunkNetDev::SetPromiscReceiveCallback (
   m_promiscRxCallback = cb;
 }
 
-bool SimbricksTrunk::TrunkNetDev::SupportsSendFrom (void) const
+bool SimbricksTrunk::TrunkNetDev::SupportsSendFrom () const
 {
   NS_LOG_FUNCTION (this);
   return true;
@@ -274,7 +277,7 @@ bool SimbricksTrunk::TrunkNetDev::SupportsSendFrom (void) const
 
 /******************************************************************************/
 
-TypeId SimbricksTrunk::GetTypeId (void)
+TypeId SimbricksTrunk::GetTypeId ()
 {
   static TypeId tid = TypeId ("ns3::simbricks::SimbricksTrunk")
     .SetParent<Object> ()
@@ -293,7 +296,8 @@ TypeId SimbricksTrunk::GetTypeId (void)
     .AddAttribute ("SyncDelay",
                    "Max delay between outgoing messages before sync is sent",
                    TimeValue (NanoSeconds (500.)),
-                   MakeTimeAccessor (&SimbricksTrunk::m_a_syncDelay),                   MakeTimeChecker ())
+                   MakeTimeAccessor (&SimbricksTrunk::m_a_syncDelay),
+                   MakeTimeChecker ())
     .AddAttribute ("PollDelay",
                    "Delay between polling for messages in non-sync mode",
                    TimeValue (NanoSeconds (100.)),
@@ -345,8 +349,9 @@ void SimbricksTrunk::Start ()
   m_adapter.cfgSetPollInterval (m_a_pollDelay.ToInteger(Time::PS));
   m_adapter.cfgSetRescheduleSyncTx (m_a_reschedule_sync);
   if (m_a_listen) {
-    if (m_a_shmPath.empty())
+    if (m_a_shmPath.empty()) {
       m_a_shmPath = m_a_uxSocketPath + "-shm";
+    }
     m_adapter.listen (m_a_uxSocketPath, m_a_shmPath);
   } else {
     m_adapter.connect (m_a_uxSocketPath);
@@ -364,8 +369,9 @@ Ptr<NetDevice> SimbricksTrunk::AddNetDev()
 {
   NS_LOG_FUNCTION (this);
 
-  if (ports.size() > UINT8_MAX)
+  if (ports.size() > UINT8_MAX) {
       return Ptr<NetDevice>();
+  }
 
   Ptr<TrunkNetDev> dev = Create<TrunkNetDev>(*this, ports.size());
   ports.push_back (dev);
