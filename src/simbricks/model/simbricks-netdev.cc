@@ -47,7 +47,7 @@ NS_LOG_COMPONENT_DEFINE ("SimbricksNetDevice");
  * \brief Get the type ID.
  * \return the object TypeId
  */
-TypeId SimbricksNetDevice::GetTypeId (void)
+TypeId SimbricksNetDevice::GetTypeId ()
 {
   static TypeId tid = TypeId ("ns3::simbricks::SimbricksNetDevice")
     .SetParent<NetDevice> ()
@@ -66,7 +66,8 @@ TypeId SimbricksNetDevice::GetTypeId (void)
     .AddAttribute ("SyncDelay",
                    "Max delay between outgoing messages before sync is sent",
                    TimeValue (NanoSeconds (500.)),
-                   MakeTimeAccessor (&SimbricksNetDevice::m_a_syncDelay),                   MakeTimeChecker ())
+                   MakeTimeAccessor (&SimbricksNetDevice::m_a_syncDelay),
+                   MakeTimeChecker ())
     .AddAttribute ("PollDelay",
                    "Delay between polling for messages in non-sync mode",
                    TimeValue (NanoSeconds (100.)),
@@ -100,7 +101,7 @@ TypeId SimbricksNetDevice::GetTypeId (void)
 SimbricksNetDevice::SimbricksNetDevice ()
   : base::GenericBaseAdapter<SimbricksProtoNetMsg, SimbricksProtoNetMsg>::
         Interface(*this),
-    m_adapter(*this), m_mtu(1500), m_node(0), terminated(false)
+    m_adapter(*this), m_mtu(1500), m_node(nullptr), terminated(false)
 {
   NS_LOG_FUNCTION (this);
   // Nullifying callbacks explicitly is probably not needed
@@ -121,8 +122,9 @@ void SimbricksNetDevice::Start ()
   m_adapter.cfgSetPollInterval (m_a_pollDelay.ToInteger(Time::PS));
   m_adapter.cfgSetRescheduleSyncTx (m_a_reschedule_sync);
   if (m_a_listen) {
-    if (m_a_shmPath.empty())
+    if (m_a_shmPath.empty()) {
       m_a_shmPath = m_a_uxSocketPath + "-shm";
+    }
     m_adapter.listen (m_a_uxSocketPath, m_a_shmPath);
   } else {
     m_adapter.connect (m_a_uxSocketPath);
@@ -142,16 +144,16 @@ void SimbricksNetDevice::SetIfIndex (const uint32_t index)
   m_ifIndex = index;
 }
 
-uint32_t SimbricksNetDevice::GetIfIndex (void) const
+uint32_t SimbricksNetDevice::GetIfIndex () const
 {
   NS_LOG_FUNCTION (this);
   return m_ifIndex;
 }
 
-Ptr<Channel> SimbricksNetDevice::GetChannel (void) const
+Ptr<Channel> SimbricksNetDevice::GetChannel () const
 {
   NS_LOG_FUNCTION (this);
-  return 0;
+  return nullptr;
 }
 
 void SimbricksNetDevice::SetAddress (Address address)
@@ -160,7 +162,7 @@ void SimbricksNetDevice::SetAddress (Address address)
   m_address = Mac48Address::ConvertFrom (address);
 }
 
-Address SimbricksNetDevice::GetAddress (void) const
+Address SimbricksNetDevice::GetAddress () const
 {
   NS_LOG_FUNCTION (this);
   return m_address;
@@ -173,13 +175,13 @@ bool SimbricksNetDevice::SetMtu (const uint16_t mtu)
   return true;
 }
 
-uint16_t SimbricksNetDevice::GetMtu (void) const
+uint16_t SimbricksNetDevice::GetMtu () const
 {
   NS_LOG_FUNCTION (this);
   return m_mtu;
 }
 
-bool SimbricksNetDevice::IsLinkUp (void) const
+bool SimbricksNetDevice::IsLinkUp () const
 {
   NS_LOG_FUNCTION (this);
   return true;
@@ -190,19 +192,19 @@ void SimbricksNetDevice::AddLinkChangeCallback (Callback<void> callback)
   NS_LOG_FUNCTION (this);
 }
 
-bool SimbricksNetDevice::IsBroadcast (void) const
+bool SimbricksNetDevice::IsBroadcast () const
 {
   NS_LOG_FUNCTION (this);
   return true;
 }
 
-Address SimbricksNetDevice::GetBroadcast (void) const
+Address SimbricksNetDevice::GetBroadcast () const
 {
   NS_LOG_FUNCTION (this);
   return Mac48Address ("ff:ff:ff:ff:ff:ff");
 }
 
-bool SimbricksNetDevice::IsMulticast (void) const
+bool SimbricksNetDevice::IsMulticast () const
 {
   NS_LOG_FUNCTION (this);
   return true;
@@ -220,13 +222,13 @@ Address SimbricksNetDevice::GetMulticast (Ipv6Address addr) const
   return Mac48Address::GetMulticast (addr);
 }
 
-bool SimbricksNetDevice::IsBridge (void) const
+bool SimbricksNetDevice::IsBridge () const
 {
   NS_LOG_FUNCTION (this);
   return false;
 }
 
-bool SimbricksNetDevice::IsPointToPoint (void) const
+bool SimbricksNetDevice::IsPointToPoint () const
 {
   NS_LOG_FUNCTION (this);
   return false;
@@ -242,8 +244,9 @@ bool SimbricksNetDevice::SendFrom (Ptr<Packet> packet, const Address& source, co
 {
   NS_LOG_FUNCTION (this << packet << source << dest << protocolNumber);
 
-  if (terminated)
+  if (terminated) {
       return false;
+  }
 
   EthernetHeader header (false);
   header.SetSource (Mac48Address::ConvertFrom (source));
@@ -263,7 +266,7 @@ bool SimbricksNetDevice::SendFrom (Ptr<Packet> packet, const Address& source, co
   return true;
 }
 
-Ptr<Node> SimbricksNetDevice::GetNode (void) const
+Ptr<Node> SimbricksNetDevice::GetNode () const
 {
   NS_LOG_FUNCTION (this);
   return m_node;
@@ -275,7 +278,7 @@ void SimbricksNetDevice::SetNode (Ptr<Node> node)
   m_node = node;
 }
 
-bool SimbricksNetDevice::NeedsArp (void) const
+bool SimbricksNetDevice::NeedsArp () const
 {
   NS_LOG_FUNCTION (this);
   return true;
@@ -293,7 +296,7 @@ void SimbricksNetDevice::SetPromiscReceiveCallback (PromiscReceiveCallback cb)
   m_promiscRxCallback = cb;
 }
 
-bool SimbricksNetDevice::SupportsSendFrom (void) const
+bool SimbricksNetDevice::SupportsSendFrom () const
 {
   NS_LOG_FUNCTION (this);
   return true;
@@ -365,8 +368,9 @@ void SimbricksNetDevice::RxInContext (Ptr<Packet> packet)
   EthernetHeader header (false);
 
   // packet is shorter than header -> drop
-  if (packet->GetSize () < header.GetSerializedSize ())
+  if (packet->GetSize () < header.GetSerializedSize ()) {
     return;
+  }
 
   packet->RemoveHeader (header);
 
@@ -374,14 +378,15 @@ void SimbricksNetDevice::RxInContext (Ptr<Packet> packet)
   source = header.GetSource ();
   protocol = header.GetLengthType ();
 
-  if (header.GetDestination ().IsBroadcast ())
+  if (header.GetDestination ().IsBroadcast ()) {
     packetType = NS3_PACKET_BROADCAST;
-  else if (header.GetDestination ().IsGroup ())
+  } else if (header.GetDestination ().IsGroup ()) {
     packetType = NS3_PACKET_MULTICAST;
-  else if (destination == m_address)
+  } else if (destination == m_address) {
     packetType = NS3_PACKET_HOST;
-  else
+  } else {
     packetType = NS3_PACKET_OTHERHOST;
+  }
 
   if (!m_promiscRxCallback.IsNull ()) {
     m_promiscRxCallback (this, packet, protocol, source, destination,

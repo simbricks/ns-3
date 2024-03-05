@@ -79,7 +79,7 @@ main (int argc, char *argv[])
 
   NS_LOG_INFO ("Create SimbricksDevices and add them to bridge");
   std::vector <Ptr<simbricks::SimbricksNetDevice>> simbricksDevs;
-  for (std::string cpp : simbricksPortPaths) {
+  for (std::string& cpp : simbricksPortPaths) {
     Ptr<simbricks::SimbricksNetDevice> device =
       CreateObject<simbricks::SimbricksNetDevice> ();
     device->SetAttribute ("UnixSocket", StringValue (cpp));

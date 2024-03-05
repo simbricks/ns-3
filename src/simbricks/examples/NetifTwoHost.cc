@@ -77,7 +77,7 @@ int main (int argc, char *argv[]){
 
     Ptr<simbricks::SimbricksNetDevice> rxDev;
     rxDev = CreateObject<simbricks::SimbricksNetDevice> ();
-    rxDev->SetAttribute("UnixSocket", StringValue(uxSocketPath.c_str()));
+    rxDev->SetAttribute("UnixSocket", StringValue(uxSocketPath));
     rxDev->SetAttribute("SyncDelay", TimeValue(PicoSeconds(syncDelay)));
     rxDev->SetAttribute("PollDelay", TimeValue(PicoSeconds(pollDelay)));
     rxDev->SetAttribute("EthLatency", TimeValue(PicoSeconds(ethLatency)));
