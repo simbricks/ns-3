@@ -1,8 +1,5 @@
-#include "ns3/core-module.h"
 #include "ns3/e2e-cc-module.h"
-#include "ns3/internet-module.h"
 
-#include <iostream>
 #include <queue>
 
 /**

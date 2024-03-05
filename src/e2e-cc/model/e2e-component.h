@@ -28,6 +28,8 @@
 
 #include "e2e-config.h"
 
+#include <optional>
+
 namespace ns3
 {
 

@@ -28,6 +28,12 @@
 
 #include "e2e-component.h"
 
+#include "ns3/application.h"
+#include "ns3/simulator.h"
+#include "ns3/socket.h"
+
+#include <fstream>
+
 namespace ns3
 {
 

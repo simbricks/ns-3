@@ -25,9 +25,12 @@
 
 #include "e2e-host.h"
 
-#include "ns3/simbricks-module.h"
-#include "ns3/core-module.h"
-#include "ns3/internet-module.h"
+#include "ns3/config.h"
+#include "ns3/integer.h"
+#include "ns3/internet-stack-helper.h"
+#include "ns3/net-device-queue-interface.h"
+#include "ns3/queue.h"
+#include "ns3/simbricks-netdev.h"
 
 namespace ns3
 {

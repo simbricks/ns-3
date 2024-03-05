@@ -25,9 +25,8 @@
 
 #include "e2e-config.h"
 
-#include "ns3/core-module.h"
-
 #include <filesystem>
+#include <fstream>
 
 namespace ns3
 {

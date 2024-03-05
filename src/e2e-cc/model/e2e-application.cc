@@ -24,10 +24,11 @@
  */
 
 #include "e2e-application.h"
-#include "e2e-component.h"
-#include "e2e-config.h"
 
-#include "ns3/applications-module.h"
+#include "ns3/bulk-send-application.h"
+#include "ns3/data-rate.h"
+#include "ns3/packet-sink.h"
+#include "ns3/uinteger.h"
 
 namespace ns3
 {
