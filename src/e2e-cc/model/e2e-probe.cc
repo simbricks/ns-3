@@ -23,10 +23,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "e2e-probe.h"
 #include "e2e-application.h"
-
-#include "ns3/applications-module.h"
+#include "e2e-probe.h"
 
 namespace ns3
 {

@@ -25,6 +25,9 @@
 
 #include "e2e-network.h"
 
+#include "ns3/integer.h"
+#include "ns3/simbricks-netdev.h"
+
 namespace ns3
 {
 

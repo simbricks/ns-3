@@ -26,13 +26,12 @@
 #ifndef E2E_TOPOLOGY_H
 #define E2E_TOPOLOGY_H
 
+#include "e2e-component.h"
 #include "e2e-host.h"
 #include "e2e-network.h"
-#include "e2e-config.h"
-#include "e2e-component.h"
 
-#include "ns3/network-module.h"
-#include "ns3/bridge-module.h"
+#include "ns3/bridge-net-device.h"
+#include "ns3/simple-net-device-helper.h"
 
 namespace ns3
 {

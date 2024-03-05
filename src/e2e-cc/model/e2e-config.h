@@ -26,10 +26,11 @@
 #ifndef E2E_CONFIG_H
 #define E2E_CONFIG_H
 
+#include "ns3/command-line.h"
+#include "ns3/inet-socket-address.h"
 #include "ns3/object.h"
 #include "ns3/object-factory.h"
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
+#include "ns3/string.h"
 
 // Add a doxygen group for this module.
 // If you have more than one file, this should be in only one of them.

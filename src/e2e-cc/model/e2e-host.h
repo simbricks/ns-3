@@ -26,11 +26,11 @@
 #ifndef E2E_HOST_H
 #define E2E_HOST_H
 
-#include "e2e-config.h"
-#include "e2e-component.h"
 #include "e2e-application.h"
+#include "e2e-component.h"
 
-#include "ns3/network-module.h"
+#include "ns3/simple-channel.h"
+#include "ns3/simple-net-device.h"
 
 namespace ns3
 {
