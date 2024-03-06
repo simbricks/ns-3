@@ -333,6 +333,8 @@ E2EConfigParser::ParseArguments(int argc, char* argv[])
         MakeBoundCallback(AddConfig, &m_probes));
     m_cmd.AddValue("Global", "Add global options", MakeBoundCallback(AddConfig, &m_globals));
     m_cmd.AddValue("ConfigFile", "A file that contains command line options", configFile);
+    m_cmd.AddValue("Logging", "Enable Logging for specified components",
+        MakeBoundCallback(AddConfig, &m_logging));
     m_cmd.Parse(argc, argv);
 
     if (not configFile.empty())
@@ -449,6 +451,12 @@ const std::vector<E2EConfig>&
 E2EConfigParser::GetGlobalArgs()
 {
     return m_globals;
+}
+
+const std::vector<E2EConfig>&
+E2EConfigParser::GetLoggingArgs()
+{
+    return m_logging;
 }
 
 bool
