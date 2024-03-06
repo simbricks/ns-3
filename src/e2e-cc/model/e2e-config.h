@@ -274,6 +274,7 @@ class E2EConfigParser
     const std::vector<E2EConfig>& GetApplicationArgs();
     const std::vector<E2EConfig>& GetProbeArgs();
     const std::vector<E2EConfig>& GetGlobalArgs();
+    const std::vector<E2EConfig>& GetLoggingArgs();
 
   protected:
     static bool AddConfig(std::vector<E2EConfig> *configs, const std::string &args);
@@ -288,6 +289,7 @@ class E2EConfigParser
     std::vector<E2EConfig> m_applications;
     std::vector<E2EConfig> m_probes;
     std::vector<E2EConfig> m_globals;
+    std::vector<E2EConfig> m_logging;
 };
 
 } // namespace ns3
