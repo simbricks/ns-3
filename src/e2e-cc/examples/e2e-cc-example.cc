@@ -43,7 +43,7 @@ const std::map<std::string, ns3::LogLevel> LOG_LABEL_LEVELS = {
 void
 PrintProgress(Time interval, Time end)
 {
-    NS_LOG_UNCOND("current time: " << Simulator::Now().GetMilliSeconds() << "ms");
+    std::cerr << "current time: " << Simulator::Now().GetMilliSeconds() << "ms\n";
     if (Simulator::Now() + interval < end)
     {
         Simulator::Schedule(interval, PrintProgress, interval, end);
