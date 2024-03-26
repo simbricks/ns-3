@@ -40,6 +40,16 @@ const std::map<std::string, ns3::LogLevel> LOG_LABEL_LEVELS = {
     // clang-format on
 };
 
+void
+PrintProgress(Time interval, Time end)
+{
+    NS_LOG_UNCOND("current time: " << Simulator::Now().GetMilliSeconds() << "ms");
+    if (Simulator::Now() + interval < end)
+    {
+        Simulator::Schedule(interval, PrintProgress, interval, end);
+    }
+}
+
 int
 main(int argc, char* argv[])
 {
@@ -105,6 +115,14 @@ main(int argc, char* argv[])
             Mac48Address::SetAllocationIndex(
               std::stoull(std::string((*macStart).value)));
             (*macStart).processed = true;
+        }
+        if (auto progress {globalConfig.Find("Progress")}; progress)
+        {
+            auto pos = progress->value.find(',');
+            NS_ABORT_MSG_IF(pos == std::string_view::npos, "Invalid progress value");
+            Time interval(std::string(progress->value.substr(0, pos)));
+            Time end(std::string(progress->value.substr(pos + 1)));
+            Simulator::ScheduleNow(PrintProgress, interval, end);
         }
     }
 
