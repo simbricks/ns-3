@@ -310,6 +310,10 @@ E2EConfig::ResolveType(std::string_view type, std::string_view value) const
 
         return Create<AddressValue>(InetSocketAddress(std::string(address).c_str(), port));
     }
+    else if (type == "Ipv4Address")
+    {
+        return Create<AddressValue>(Ipv4Address(std::string(value).c_str()));
+    }
     return Ptr<AttributeValue>();
 }
 
