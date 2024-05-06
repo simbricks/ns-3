@@ -8,6 +8,4 @@ build_lib(
     helper/sequencer-helper.h
   LIBRARIES_TO_LINK ${libinternet}
                     ${libnetwork}
-  TEST_SOURCES
-    test/sequencer-test-suite.cc
 )
