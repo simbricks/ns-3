@@ -82,7 +82,7 @@ class E2EPeriodicSampleProbe : public E2EProbe
     void WriteLine();
     void SetWriter(void writer(std::ostream&, T));
 
-    T m_value;
+    T m_value {};
 
   private:
     std::ostream* m_output;
@@ -102,10 +102,6 @@ inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config
                                                          Callback<void, std::ostream&, T> writer)
                                                          : E2EProbe(config), m_writeData{writer}
 {
-    if constexpr (std::is_integral_v<T>)
-    {
-        m_value = 0;
-    }
     Time startTime;
     m_output = &std::cout;
     if (auto file {config.Find("File")}; file)
