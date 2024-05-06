@@ -14,15 +14,11 @@ build_lib(
     model/simbricks-adapter.cc
     model/simbricks-adapter-nicif.cc
     model/simbricks-nicif.cc
-    helper/simbricks-helper.cc
   HEADER_FILES
     model/simbricks.h
     model/simbricks-adapter.h
     model/simbricks-adapter-nicif.h
     model/simbricks-nicif.h
-    helper/simbricks-helper.h
   LIBRARIES_TO_LINK ${libinternet}
                     ${libnetwork}
-  TEST_SOURCES
-    test/simbricks-test-suite.cc
 )
