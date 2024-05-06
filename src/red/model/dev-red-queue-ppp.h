@@ -130,22 +130,6 @@ DevRedQueuePPP<Item>::Enqueue (Ptr<Item> item)
 
   //make a copy of the packet
   Ptr<Packet> q = item->Copy();
-  
-
-  /*size_t buf_size = q->GetSize();
-  uint8_t *buffer = new uint8_t[buf_size];
-  q->CopyData(buffer, buf_size);
-  uint8_t *pktptr = buffer;
-  pktptr += 2;
-  Ipv4Header header_;
-  struct iphdr *iph = (struct iphdr*) pktptr;
-  uint32_t ip_source = iph->saddr;
-  NS_LOG_DEBUG("IP source: " << ip_source);
-  Ptr<Packet> pkt_tosend = Create<Packet> (pktptr, buf_size - 2);
-  pkt_tosend->RemoveHeader(header_);
-  NS_LOG_DEBUG("source: " << header_.GetSource());  
-  */
-
 
   //get the packet header
   item->RemoveHeader (pheader);
