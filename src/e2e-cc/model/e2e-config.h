@@ -28,8 +28,8 @@
 
 #include "ns3/command-line.h"
 #include "ns3/inet-socket-address.h"
-#include "ns3/object.h"
 #include "ns3/object-factory.h"
+#include "ns3/object.h"
 #include "ns3/string.h"
 
 // Add a doxygen group for this module.
@@ -48,7 +48,7 @@ struct E2EConfigValue
 {
     std::string_view type;
     std::string_view value;
-    mutable bool processed {false};
+    mutable bool processed{false};
 };
 
 /* ... */
@@ -58,7 +58,7 @@ class E2EConfig
     using args_type = std::unordered_map<std::string_view, E2EConfigValue>;
 
   public:
-    E2EConfig(const std::string &args);
+    E2EConfig(const std::string& args);
 
     using iterator = args_type::iterator;
     using const_iterator = args_type::const_iterator;
@@ -78,24 +78,27 @@ class E2EConfig
     void SetFactory(ObjectFactory& factory, bool processed = true) const;
     void SetFactory(ObjectFactory& factory, config_type& configs, bool processed = true) const;
 
-    template<typename R, typename T, typename U>
+    template <typename R, typename T, typename U>
     void Set(Callback<R, T, U> callback, bool processed = true) const;
-    template<typename R, typename T, typename U>
+    template <typename R, typename T, typename U>
     void Set(Callback<R, T, U> callback, config_type& configs, bool processed = true) const;
 
-    std::unordered_map<std::string_view, config_type>
-    ParseCategories() const;
+    std::unordered_map<std::string_view, config_type> ParseCategories() const;
 
-    template<typename T, typename U>
-    bool SetAttrIfContained(Ptr<Object> obj, std::string_view mapKey,
-        const std::string& attributeKey, bool processed = true) const;
+    template <typename T, typename U>
+    bool SetAttrIfContained(Ptr<Object> obj,
+                            std::string_view mapKey,
+                            const std::string& attributeKey,
+                            bool processed = true) const;
 
-    template<typename T, typename U>
-    bool SetFactoryIfContained(ObjectFactory &factory, std::string_view mapKey,
-        const std::string& attributeKey, bool processed = true) const;
+    template <typename T, typename U>
+    bool SetFactoryIfContained(ObjectFactory& factory,
+                               std::string_view mapKey,
+                               const std::string& attributeKey,
+                               bool processed = true) const;
 
-    static int64_t ConvertArgToInteger(const std::string &arg);
-    static uint64_t ConvertArgToUInteger(const std::string &arg);
+    static int64_t ConvertArgToInteger(const std::string& arg);
+    static uint64_t ConvertArgToUInteger(const std::string& arg);
 
   private:
     std::string m_rawArgs;
@@ -105,7 +108,7 @@ class E2EConfig
     Ptr<AttributeValue> ResolveType(std::string_view type, std::string_view value) const;
 };
 
-template<typename R, typename T, typename U>
+template <typename R, typename T, typename U>
 void
 E2EConfig::Set(Callback<R, T, U> callback, bool processed) const
 {
@@ -123,17 +126,16 @@ E2EConfig::Set(Callback<R, T, U> callback, bool processed) const
         else
         {
             Ptr<AttributeValue> val = ResolveType(config.second.type, config.second.value);
-            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
-                                     << config.second.value
-                                     << " with type "
-                                     << config.second.type);
+            NS_ABORT_MSG_UNLESS(val,
+                                "Could not convert value " << config.second.value << " with type "
+                                                           << config.second.type);
             callback(std::string(config.first), *val);
         }
         config.second.processed = processed;
     }
 }
 
-template<typename R, typename T, typename U>
+template <typename R, typename T, typename U>
 void
 E2EConfig::Set(Callback<R, T, U> callback, E2EConfig::config_type& configs, bool processed) const
 {
@@ -151,10 +153,9 @@ E2EConfig::Set(Callback<R, T, U> callback, E2EConfig::config_type& configs, bool
         else
         {
             Ptr<AttributeValue> val = ResolveType(config.second->type, config.second->value);
-            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
-                                     << config.second->value
-                                     << " with type "
-                                     << config.second->type);
+            NS_ABORT_MSG_UNLESS(val,
+                                "Could not convert value " << config.second->value << " with type "
+                                                           << config.second->type);
             callback(std::string(config.first), *val);
         }
         config.second->processed = processed;
@@ -177,26 +178,26 @@ E2EConfig::SetAttrIfContained(Ptr<Object> obj,
         }
         else if constexpr (std::is_same_v<U, int>)
         {
-            int64_t value {ConvertArgToInteger(std::string(attributeValue))};
+            int64_t value{ConvertArgToInteger(std::string(attributeValue))};
             obj->SetAttribute(attributeKey, T(value));
         }
         else if constexpr (std::is_same_v<U, unsigned>)
         {
-            uint64_t value {ConvertArgToUInteger(std::string(attributeValue))};
+            uint64_t value{ConvertArgToUInteger(std::string(attributeValue))};
             obj->SetAttribute(attributeKey, T(value));
         }
         else if constexpr (std::is_same_v<U, InetSocketAddress>)
         {
-            std::string_view address {attributeValue};
-            std::string_view portString {attributeValue};
+            std::string_view address{attributeValue};
+            std::string_view portString{attributeValue};
 
-            auto pos {address.find(':')};
+            auto pos{address.find(':')};
             NS_ABORT_MSG_IF(pos == std::string_view::npos, "Invalid address '" << address << "'");
 
             address.remove_suffix(address.size() - pos);
             portString.remove_prefix(pos + 1);
 
-            auto port {ConvertArgToUInteger(std::string(portString))};
+            auto port{ConvertArgToUInteger(std::string(portString))};
             NS_ABORT_MSG_IF(port > 65535, "Port '" << port << "' is out of range");
             obj->SetAttribute(attributeKey, T(U(std::string(address).c_str(), port)));
         }
@@ -226,26 +227,26 @@ E2EConfig::SetFactoryIfContained(ObjectFactory& factory,
         }
         else if constexpr (std::is_same_v<U, int>)
         {
-            int64_t value {ConvertArgToInteger(std::string(attributeValue))};
+            int64_t value{ConvertArgToInteger(std::string(attributeValue))};
             factory.Set(attributeKey, T(value));
         }
         else if constexpr (std::is_same_v<U, unsigned>)
         {
-            uint64_t value {ConvertArgToUInteger(std::string(attributeValue))};
+            uint64_t value{ConvertArgToUInteger(std::string(attributeValue))};
             factory.Set(attributeKey, T(value));
         }
         else if constexpr (std::is_same_v<U, InetSocketAddress>)
         {
-            std::string_view address {attributeValue};
-            std::string_view portString {attributeValue};
+            std::string_view address{attributeValue};
+            std::string_view portString{attributeValue};
 
-            auto pos {address.find(':')};
+            auto pos{address.find(':')};
             NS_ABORT_MSG_IF(pos == std::string_view::npos, "Invalid address '" << address << "'");
 
             address.remove_suffix(address.size() - pos);
             portString.remove_prefix(pos + 1);
 
-            auto port {ConvertArgToUInteger(std::string(portString))};
+            auto port{ConvertArgToUInteger(std::string(portString))};
             NS_ABORT_MSG_IF(port > 65535, "Port '" << port << "' is out of range");
             factory.Set(attributeKey, T(U(std::string(address).c_str(), port)));
         }
@@ -264,7 +265,7 @@ class E2EConfigParser
 {
   public:
     E2EConfigParser();
-    
+
     virtual void ParseArguments(int argc, char* argv[]);
 
     const std::vector<E2EConfig>& GetTopologyNodeArgs();
@@ -277,7 +278,7 @@ class E2EConfigParser
     const std::vector<E2EConfig>& GetLoggingArgs();
 
   protected:
-    static bool AddConfig(std::vector<E2EConfig> *configs, const std::string &args);
+    static bool AddConfig(std::vector<E2EConfig>* configs, const std::string& args);
 
     CommandLine m_cmd;
 

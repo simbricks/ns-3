@@ -37,20 +37,21 @@ namespace ns3
 
 NS_LOG_COMPONENT_DEFINE("E2EHost");
 
-E2EHost::E2EHost(const E2EConfig& config) : E2EComponent(config)
+E2EHost::E2EHost(const E2EConfig& config)
+    : E2EComponent(config)
 {
     NS_ABORT_MSG_IF(GetId().empty(), "Host has no id");
     NS_ABORT_MSG_IF(GetIdPath().size() != 2,
-        "Host '" << GetId() << "' has invalid path length of " << GetIdPath().size());
+                    "Host '" << GetId() << "' has invalid path length of " << GetIdPath().size());
     NS_ABORT_MSG_IF(GetType().empty(), "Host '" << GetId() << "' has no type");
 }
 
 Ptr<E2EHost>
 E2EHost::CreateHost(const E2EConfig& config)
 {
-    auto type_opt {config.Find("Type")};
+    auto type_opt{config.Find("Type")};
     NS_ABORT_MSG_UNLESS(type_opt, "Host has no type");
-    std::string_view type {(*type_opt).value};
+    std::string_view type{(*type_opt).value};
     (*type_opt).processed = true;
 
     if (type == "Simbricks")
@@ -82,16 +83,17 @@ E2EHost::GetNode()
 void
 E2EHost::AddApplication(Ptr<E2EApplication> application)
 {
-    NS_ABORT_MSG("Applications are not supported for host '" << GetId()
-        << "' with type '" << GetType() << "'");
+    NS_ABORT_MSG("Applications are not supported for host '" << GetId() << "' with type '"
+                                                             << GetType() << "'");
 }
 
-E2ESimbricksHost::E2ESimbricksHost(const E2EConfig& config) : E2EHost(config)
+E2ESimbricksHost::E2ESimbricksHost(const E2EConfig& config)
+    : E2EHost(config)
 {
-    Ptr<simbricks::SimbricksNetDevice> netDevice =
-        CreateObject<simbricks::SimbricksNetDevice>();
+    Ptr<simbricks::SimbricksNetDevice> netDevice = CreateObject<simbricks::SimbricksNetDevice>();
     if (not config.SetAttrIfContained<StringValue, std::string>(netDevice,
-        "UnixSocket", "UnixSocket"))
+                                                                "UnixSocket",
+                                                                "UnixSocket"))
     {
         NS_LOG_WARN("No Unix socket path for Simbricks host '" << GetId() << "' given.");
     }
@@ -106,22 +108,23 @@ E2ESimbricksHost::E2ESimbricksHost(const E2EConfig& config) : E2EHost(config)
     m_netDevice = netDevice;
 }
 
-E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
+E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config)
+    : E2EHost(config)
 {
     m_node = CreateObject<Node>();
-    auto categories {config.ParseCategories()};
+    auto categories{config.ParseCategories()};
 
     ObjectFactory deviceFactory;
     deviceFactory.SetTypeId("ns3::SimpleNetDevice");
-    if (auto it {categories.find("Device")}; it != categories.end())
+    if (auto it{categories.find("Device")}; it != categories.end())
     {
         config.SetFactory(deviceFactory, it->second);
     }
 
     ObjectFactory queueFactory;
-    if (auto opt {config.Find("QueueType")}; opt)
+    if (auto opt{config.Find("QueueType")}; opt)
     {
-        std::string queueType {opt->value};
+        std::string queueType{opt->value};
         QueueBase::AppendItemTypeIfNotPresent(queueType, "Packet");
         queueFactory.SetTypeId(queueType);
         opt->processed = true;
@@ -130,13 +133,13 @@ E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
     {
         queueFactory.SetTypeId("ns3::DropTailQueue<Packet>");
     }
-    if (auto it {categories.find("Queue")}; it != categories.end())
+    if (auto it{categories.find("Queue")}; it != categories.end())
     {
         config.SetFactory(queueFactory, it->second);
     }
 
     ObjectFactory channelFactory;
-    if (auto opt {config.Find("ChannelType")}; opt)
+    if (auto opt{config.Find("ChannelType")}; opt)
     {
         channelFactory.SetTypeId(std::string(opt->value));
         opt->processed = true;
@@ -145,7 +148,7 @@ E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
     {
         channelFactory.SetTypeId("ns3::SimpleChannel");
     }
-    if (auto it {categories.find("Channel")}; it != categories.end())
+    if (auto it{categories.find("Channel")}; it != categories.end())
     {
         config.SetFactory(channelFactory, it->second);
     }
@@ -154,8 +157,8 @@ E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
     Ptr<SimpleNetDevice> netDevice = deviceFactory.Create<SimpleNetDevice>();
     m_netDevice = netDevice;
     m_outerNetDevice = deviceFactory.Create<SimpleNetDevice>();
-    //device->SetAttribute("PointToPointMode", BooleanValue(m_pointToPointMode));
-    // Allocate and set mac addresses
+    // device->SetAttribute("PointToPointMode", BooleanValue(m_pointToPointMode));
+    //  Allocate and set mac addresses
     m_netDevice->SetAddress(Mac48Address::Allocate());
     m_outerNetDevice->SetAddress(Mac48Address::Allocate());
 
@@ -168,7 +171,7 @@ E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
     netDevice->SetQueue(innerQueue);
     Ptr<Queue<Packet>> outerQueue = queueFactory.Create<Queue<Packet>>();
     m_outerNetDevice->SetQueue(outerQueue);
-    
+
     if (m_enableFlowControl)
     {
         // Aggregate a NetDeviceQueueInterface object
@@ -182,7 +185,7 @@ E2ESimpleNs3Host::E2ESimpleNs3Host(const E2EConfig& config) : E2EHost(config)
     }
 
     // Set congestion control algorithm
-    if (auto algo {config.Find("CongestionControl")}; algo)
+    if (auto algo{config.Find("CongestionControl")}; algo)
     {
         TypeId tid = TypeId::LookupByName(std::string((*algo).value));
         std::stringstream nodeId;
@@ -212,7 +215,7 @@ void
 E2ESimpleNs3Host::SetIpAddress()
 {
     std::string_view ipString;
-    if (auto ip {m_config.Find("Ip")}; ip)
+    if (auto ip{m_config.Find("Ip")}; ip)
     {
         ipString = (*ip).value;
         (*ip).processed = true;
@@ -223,11 +226,11 @@ E2ESimpleNs3Host::SetIpAddress()
         return;
     }
 
-    std::string_view ip {ipString};
-    std::string_view netmask {ipString};
-    auto pos {ip.find('/')};
+    std::string_view ip{ipString};
+    std::string_view netmask{ipString};
+    auto pos{ip.find('/')};
     NS_ABORT_MSG_IF(pos == std::string_view::npos,
-        "IP '" << ipString << "' for node '" << GetId() << "' is invalid");
+                    "IP '" << ipString << "' for node '" << GetId() << "' is invalid");
     ip.remove_suffix(ip.size() - pos);
     netmask.remove_prefix(pos);
 
@@ -236,9 +239,9 @@ E2ESimpleNs3Host::SetIpAddress()
 
     Ptr<Ipv4> ipv4 = m_node->GetObject<Ipv4>();
     NS_ASSERT_MSG(ipv4,
-                    "NetDevice is associated"
-                    " with a node without IPv4 stack installed -> fail "
-                    "(maybe need to use InternetStackHelper?)");
+                  "NetDevice is associated"
+                  " with a node without IPv4 stack installed -> fail "
+                  "(maybe need to use InternetStackHelper?)");
 
     int32_t interface = ipv4->GetInterfaceForDevice(m_outerNetDevice);
     if (interface == -1)
@@ -248,7 +251,7 @@ E2ESimpleNs3Host::SetIpAddress()
     NS_ASSERT_MSG(interface >= 0, "Interface index not found");
 
     Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress(Ipv4Address(std::string(ip).c_str()),
-        Ipv4Mask(std::string(netmask).c_str()));
+                                                         Ipv4Mask(std::string(netmask).c_str()));
     ipv4->AddAddress(interface, ipv4Addr);
     ipv4->SetMetric(interface, 1);
     ipv4->SetUp(interface);

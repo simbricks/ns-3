@@ -38,7 +38,7 @@ namespace ns3
 class E2ENetwork : public E2EComponent
 {
   public:
-    E2ENetwork(const E2EConfig &config);
+    E2ENetwork(const E2EConfig& config);
 
     static Ptr<E2ENetwork> CreateNetwork(const E2EConfig& config);
 
@@ -51,13 +51,13 @@ class E2ENetwork : public E2EComponent
 class E2ENetworkSimbricks : public E2ENetwork
 {
   public:
-    E2ENetworkSimbricks(const E2EConfig &config);
+    E2ENetworkSimbricks(const E2EConfig& config);
 };
 
 class E2ENetworkTrunk : public E2EComponent
 {
   public:
-    E2ENetworkTrunk(const E2EConfig &config);
+    E2ENetworkTrunk(const E2EConfig& config);
 
     Ptr<NetDevice> AddDevice(int id);
 
@@ -69,7 +69,7 @@ class E2ENetworkTrunk : public E2EComponent
 class E2ENetworkTrunkDevice : public E2ENetwork
 {
   public:
-    E2ENetworkTrunkDevice(const E2EConfig &config, Ptr<E2EComponent> root, int64_t orderId);
+    E2ENetworkTrunkDevice(const E2EConfig& config, Ptr<E2EComponent> root, int64_t orderId);
 };
 
 } // namespace ns3

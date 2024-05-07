@@ -33,7 +33,8 @@ namespace ns3
 
 NS_LOG_COMPONENT_DEFINE("E2EConfig");
 
-E2EConfig::E2EConfig(const std::string &args) : m_rawArgs{args}
+E2EConfig::E2EConfig(const std::string& args)
+    : m_rawArgs{args}
 {
     SplitArgs();
 }
@@ -103,15 +104,14 @@ E2EConfig::SetAttr(Ptr<Object> obj, bool processed) const
         if (config.second.type.empty())
         {
             obj->SetAttribute(std::string(config.first),
-                StringValue(std::string(config.second.value)));
+                              StringValue(std::string(config.second.value)));
         }
         else
         {
             Ptr<AttributeValue> val = ResolveType(config.second.type, config.second.value);
-            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
-                                     << config.second.value
-                                     << " with type "
-                                     << config.second.type);
+            NS_ABORT_MSG_UNLESS(val,
+                                "Could not convert value " << config.second.value << " with type "
+                                                           << config.second.type);
             obj->SetAttribute(std::string(config.first), *val);
         }
         config.second.processed = processed;
@@ -135,10 +135,9 @@ E2EConfig::SetFactory(ObjectFactory& factory, bool processed) const
         else
         {
             Ptr<AttributeValue> val = ResolveType(config.second.type, config.second.value);
-            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
-                                     << config.second.value
-                                     << " with type "
-                                     << config.second.type);
+            NS_ABORT_MSG_UNLESS(val,
+                                "Could not convert value " << config.second.value << " with type "
+                                                           << config.second.type);
             factory.Set(std::string(config.first), *val);
         }
         config.second.processed = processed;
@@ -162,10 +161,9 @@ E2EConfig::SetFactory(ObjectFactory& factory, config_type& configs, bool process
         else
         {
             Ptr<AttributeValue> val = ResolveType(config.second->type, config.second->value);
-            NS_ABORT_MSG_UNLESS(val, "Could not convert value "
-                                     << config.second->value
-                                     << " with type "
-                                     << config.second->type);
+            NS_ABORT_MSG_UNLESS(val,
+                                "Could not convert value " << config.second->value << " with type "
+                                                           << config.second->type);
             factory.Set(std::string(config.first), *val);
         }
         config.second->processed = processed;
@@ -186,7 +184,7 @@ E2EConfig::ParseCategories() const
         }
         std::string_view category = key.substr(0, pos);
         key.remove_prefix(pos + 1);
-        if (auto it {mapping.find(category)}; it != mapping.end())
+        if (auto it{mapping.find(category)}; it != mapping.end())
         {
             it->second.emplace_back(key, &config.second);
         }
@@ -207,11 +205,11 @@ E2EConfig::ConvertArgToInteger(const std::string& arg)
     {
         value = std::stol(arg, &pos);
     }
-    catch (std::invalid_argument const&)
+    catch (const std::invalid_argument&)
     {
         NS_ABORT_MSG("unable to convert input '" << arg << "' into integer");
     }
-    catch (std::out_of_range const&)
+    catch (const std::out_of_range&)
     {
         NS_ABORT_MSG("input '" << arg << "' out of range");
     }
@@ -233,11 +231,11 @@ E2EConfig::ConvertArgToUInteger(const std::string& arg)
     {
         value = std::stoul(arg, &pos);
     }
-    catch (std::invalid_argument const&)
+    catch (const std::invalid_argument&)
     {
         NS_ABORT_MSG("unable to convert input '" << arg << "' into integer");
     }
-    catch (std::out_of_range const&)
+    catch (const std::out_of_range&)
     {
         NS_ABORT_MSG("input '" << arg << "' out of range");
     }
@@ -253,19 +251,19 @@ E2EConfig::ConvertArgToUInteger(const std::string& arg)
 void
 E2EConfig::SplitArgs()
 {
-    std::string_view arg_view {m_rawArgs};
+    std::string_view arg_view{m_rawArgs};
 
     while (not arg_view.empty())
     {
         // extract key
-        std::string_view key {arg_view};
+        std::string_view key{arg_view};
         auto pos = key.find(':');
         NS_ABORT_MSG_IF(pos == std::string_view::npos,
-            "Invalid argument format: key without value (" << key << ")");
+                        "Invalid argument format: key without value (" << key << ")");
         key.remove_suffix(key.size() - pos);
         arg_view.remove_prefix(pos + 1);
         // check if there is a type annotation
-        std::string_view type {};
+        std::string_view type{};
         pos = key.find('(');
         if (pos != std::string_view::npos)
         {
@@ -275,7 +273,7 @@ E2EConfig::SplitArgs()
         }
 
         // extract value
-        std::string_view value {arg_view};
+        std::string_view value{arg_view};
         pos = value.find(';');
         if (pos != std::string_view::npos)
         {
@@ -296,16 +294,16 @@ E2EConfig::ResolveType(std::string_view type, std::string_view value) const
 {
     if (type == "InetSocketAddress")
     {
-        std::string_view address {value};
-        std::string_view portString {value};
+        std::string_view address{value};
+        std::string_view portString{value};
 
-        auto pos {address.find(':')};
+        auto pos{address.find(':')};
         NS_ABORT_MSG_IF(pos == std::string_view::npos, "Invalid address '" << address << "'");
 
         address.remove_suffix(address.size() - pos);
         portString.remove_prefix(pos + 1);
 
-        auto port {ConvertArgToUInteger(std::string(portString))};
+        auto port{ConvertArgToUInteger(std::string(portString))};
         NS_ABORT_MSG_IF(port > 65535, "Port '" << port << "' is out of range");
 
         return Create<AddressValue>(InetSocketAddress(std::string(address).c_str(), port));
@@ -317,37 +315,45 @@ E2EConfig::ResolveType(std::string_view type, std::string_view value) const
     return Ptr<AttributeValue>();
 }
 
-E2EConfigParser::E2EConfigParser() : m_cmd(__FILE__)
-{}
+E2EConfigParser::E2EConfigParser()
+    : m_cmd(__FILE__)
+{
+}
 
 void
 E2EConfigParser::ParseArguments(int argc, char* argv[])
 {
     std::string configFile;
-    m_cmd.AddValue("TopologyNode", "Add a topology node to the simulation",
-        MakeBoundCallback(AddConfig, &m_topologyNodes));
-    m_cmd.AddValue("TopologyChannel", "Add a topology channel to the simulation",
-        MakeBoundCallback(AddConfig, &m_topologyChannels));
+    m_cmd.AddValue("TopologyNode",
+                   "Add a topology node to the simulation",
+                   MakeBoundCallback(AddConfig, &m_topologyNodes));
+    m_cmd.AddValue("TopologyChannel",
+                   "Add a topology channel to the simulation",
+                   MakeBoundCallback(AddConfig, &m_topologyChannels));
     m_cmd.AddValue("Host", "Add a host to the simulation", MakeBoundCallback(AddConfig, &m_hosts));
-    m_cmd.AddValue("Network", "Add a network to the simulation",
-        MakeBoundCallback(AddConfig, &m_networks));
-    m_cmd.AddValue("App", "Add an application to the simulation",
-        MakeBoundCallback(AddConfig, &m_applications));
-    m_cmd.AddValue("Probe", "Add a probe to the simulation",
-        MakeBoundCallback(AddConfig, &m_probes));
+    m_cmd.AddValue("Network",
+                   "Add a network to the simulation",
+                   MakeBoundCallback(AddConfig, &m_networks));
+    m_cmd.AddValue("App",
+                   "Add an application to the simulation",
+                   MakeBoundCallback(AddConfig, &m_applications));
+    m_cmd.AddValue("Probe",
+                   "Add a probe to the simulation",
+                   MakeBoundCallback(AddConfig, &m_probes));
     m_cmd.AddValue("Global", "Add global options", MakeBoundCallback(AddConfig, &m_globals));
     m_cmd.AddValue("ConfigFile", "A file that contains command line options", configFile);
-    m_cmd.AddValue("Logging", "Enable Logging for specified components",
-        MakeBoundCallback(AddConfig, &m_logging));
+    m_cmd.AddValue("Logging",
+                   "Enable Logging for specified components",
+                   MakeBoundCallback(AddConfig, &m_logging));
     m_cmd.Parse(argc, argv);
 
     if (not configFile.empty())
     {
         std::filesystem::path p(configFile);
-        //check if file exists
+        // check if file exists
         NS_ABORT_MSG_UNLESS(std::filesystem::exists(p) and std::filesystem::is_regular_file(p),
-            "Config file " << configFile << " does not exist or is not a file");
-        
+                            "Config file " << configFile << " does not exist or is not a file");
+
         constexpr int BUFFER_SIZE = 128;
         char buffer[BUFFER_SIZE];
         std::vector<std::string> args;
@@ -407,7 +413,7 @@ E2EConfigParser::ParseArguments(int argc, char* argv[])
         {
             args.push_back(lastArg);
         }
-        
+
         file.close();
         m_cmd.Parse(args);
     }
@@ -464,7 +470,7 @@ E2EConfigParser::GetLoggingArgs()
 }
 
 bool
-E2EConfigParser::AddConfig(std::vector<E2EConfig> *config, const std::string &args)
+E2EConfigParser::AddConfig(std::vector<E2EConfig>* config, const std::string& args)
 {
     config->emplace_back(args);
     return true;

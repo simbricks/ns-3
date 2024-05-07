@@ -37,7 +37,7 @@ namespace ns3
 class E2EComponent : public SimpleRefCount<E2EComponent>
 {
   public:
-    E2EComponent(const E2EConfig &config);
+    E2EComponent(const E2EConfig& config);
     virtual ~E2EComponent() = default;
 
     std::string_view GetId() const;
@@ -49,17 +49,17 @@ class E2EComponent : public SimpleRefCount<E2EComponent>
     virtual void AddProbe(const E2EConfig& config);
 
     void AddE2EComponent(Ptr<E2EComponent> component);
-    template<typename T>
+    template <typename T>
     std::optional<Ptr<T>> GetE2EComponent(const std::vector<std::string_view>& idPath);
-    template<typename T>
+    template <typename T>
     std::optional<Ptr<T>> GetE2EComponent(std::string_view idPath);
-    template<typename T>
+    template <typename T>
     std::optional<Ptr<T>> GetE2EComponentParent(const std::vector<std::string_view>& idPath);
-    template<typename T>
+    template <typename T>
     std::optional<Ptr<T>> GetE2EComponentParent(std::string_view idPath);
 
   protected:
-    const E2EConfig &m_config;
+    const E2EConfig& m_config;
 
   private:
     std::string_view m_id;
@@ -70,7 +70,7 @@ class E2EComponent : public SimpleRefCount<E2EComponent>
     static std::vector<std::string_view> SplitIdPath(std::string_view id);
 };
 
-template<typename T>
+template <typename T>
 inline std::optional<Ptr<T>>
 E2EComponent::GetE2EComponent(const std::vector<std::string_view>& idPath)
 {
@@ -80,7 +80,7 @@ E2EComponent::GetE2EComponent(const std::vector<std::string_view>& idPath)
     }
 
     Ptr<E2EComponent> component;
-    if (auto it {m_components.find(idPath[0])}; it != m_components.end())
+    if (auto it{m_components.find(idPath[0])}; it != m_components.end())
     {
         component = it->second;
     }
@@ -91,7 +91,7 @@ E2EComponent::GetE2EComponent(const std::vector<std::string_view>& idPath)
 
     for (std::size_t i = 1; i < idPath.size(); ++i)
     {
-        if (auto it {component->m_components.find(idPath[i])}; it != component->m_components.end())
+        if (auto it{component->m_components.find(idPath[i])}; it != component->m_components.end())
         {
             component = it->second;
         }
@@ -99,7 +99,6 @@ E2EComponent::GetE2EComponent(const std::vector<std::string_view>& idPath)
         {
             return {};
         }
-
     }
 
     // component should now contain what we are looking for
@@ -109,41 +108,42 @@ E2EComponent::GetE2EComponent(const std::vector<std::string_view>& idPath)
     }
     else
     {
-        Ptr<T> casted {DynamicCast<T>(component)};
+        Ptr<T> casted{DynamicCast<T>(component)};
         if (casted)
         {
             return casted;
         }
         else
         {
-            //Todo: is it possible to use logging here?
-            //NS_LOG_ERROR("Component found but with different type");
+            // Todo: is it possible to use logging here?
+            // NS_LOG_ERROR("Component found but with different type");
             std::cerr << "Component found but with different type\n";
             return {};
         }
     }
 }
 
-template<typename T>
+template <typename T>
 inline std::optional<Ptr<T>>
 E2EComponent::GetE2EComponent(std::string_view idPath)
 {
-    auto splittedIdPath {SplitIdPath(idPath)};
+    auto splittedIdPath{SplitIdPath(idPath)};
     return GetE2EComponent<T>(splittedIdPath);
 }
 
-template<typename T>
+template <typename T>
 inline std::optional<Ptr<T>>
 E2EComponent::GetE2EComponentParent(const std::vector<std::string_view>& idPath)
 {
-    //Todo: for idPath.size()==1 maybe return something like DynamicCast<T>(Ptr<E2EComponent>(this))
+    // Todo: for idPath.size()==1 maybe return something like
+    // DynamicCast<T>(Ptr<E2EComponent>(this))
     if (idPath.size() < 2)
     {
         return {};
     }
 
     Ptr<E2EComponent> component;
-    if (auto it {m_components.find(idPath[0])}; it != m_components.end())
+    if (auto it{m_components.find(idPath[0])}; it != m_components.end())
     {
         component = it->second;
     }
@@ -154,7 +154,7 @@ E2EComponent::GetE2EComponentParent(const std::vector<std::string_view>& idPath)
 
     for (std::size_t i = 1; i < idPath.size() - 1; ++i)
     {
-        if (auto it {component->m_components.find(idPath[i])}; it != component->m_components.end())
+        if (auto it{component->m_components.find(idPath[i])}; it != component->m_components.end())
         {
             component = it->second;
         }
@@ -162,7 +162,6 @@ E2EComponent::GetE2EComponentParent(const std::vector<std::string_view>& idPath)
         {
             return {};
         }
-
     }
 
     // component should now contain what we are looking for
@@ -172,26 +171,26 @@ E2EComponent::GetE2EComponentParent(const std::vector<std::string_view>& idPath)
     }
     else
     {
-        Ptr<T> casted {DynamicCast<T>(component)};
+        Ptr<T> casted{DynamicCast<T>(component)};
         if (casted)
         {
             return casted;
         }
         else
         {
-            //Todo: is it possible to use logging here?
-            //NS_LOG_ERROR("Component found but with different type");
+            // Todo: is it possible to use logging here?
+            // NS_LOG_ERROR("Component found but with different type");
             std::cerr << "Component found but with different type\n";
             return {};
         }
     }
 }
 
-template<typename T>
+template <typename T>
 inline std::optional<Ptr<T>>
 E2EComponent::GetE2EComponentParent(std::string_view idPath)
 {
-    auto splittedIdPath {SplitIdPath(idPath)};
+    auto splittedIdPath{SplitIdPath(idPath)};
     return GetE2EComponentParent<T>(splittedIdPath);
 }
 

@@ -39,7 +39,7 @@ namespace ns3
 class E2EHost : public E2EComponent
 {
   public:
-    E2EHost(const E2EConfig &config);
+    E2EHost(const E2EConfig& config);
 
     static Ptr<E2EHost> CreateHost(const E2EConfig& config);
 
@@ -54,13 +54,13 @@ class E2EHost : public E2EComponent
 class E2ESimbricksHost : public E2EHost
 {
   public:
-    E2ESimbricksHost(const E2EConfig &config);
+    E2ESimbricksHost(const E2EConfig& config);
 };
 
 class E2ESimpleNs3Host : public E2EHost
 {
   public:
-    E2ESimpleNs3Host(const E2EConfig &config);
+    E2ESimpleNs3Host(const E2EConfig& config);
 
     Ptr<Node> GetNode() override;
     void AddApplication(Ptr<E2EApplication> application) override;

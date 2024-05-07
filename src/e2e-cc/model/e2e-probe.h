@@ -47,18 +47,20 @@ class E2EProbe : public E2EComponent
     virtual void Install(Ptr<Application> application) = 0;
 };
 
-template<typename T>
-inline void SimpleWriter(std::ostream& output, T value)
+template <typename T>
+inline void
+SimpleWriter(std::ostream& output, T value)
 {
     output << value;
 }
 
-inline void TimeWriter(Time::Unit unit, std::ostream& output, Time value)
+inline void
+TimeWriter(Time::Unit unit, std::ostream& output, Time value)
 {
     output << value.ToInteger(unit);
 }
 
-template<typename T>
+template <typename T>
 class E2EPeriodicSampleProbe : public E2EProbe
 {
   public:
@@ -67,7 +69,9 @@ class E2EPeriodicSampleProbe : public E2EProbe
 
     ~E2EPeriodicSampleProbe() override;
 
-    void Install(Ptr<Application> application) override {}
+    void Install(Ptr<Application> application) override
+    {
+    }
 
     static void UpdateValue(T value, Ptr<E2EPeriodicSampleProbe<T>> probe)
     {
@@ -82,7 +86,7 @@ class E2EPeriodicSampleProbe : public E2EProbe
     void WriteLine();
     void SetWriter(void writer(std::ostream&, T));
 
-    T m_value {};
+    T m_value{};
 
   private:
     std::ostream* m_output;
@@ -95,32 +99,34 @@ class E2EPeriodicSampleProbe : public E2EProbe
 template <typename T>
 inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config)
     : E2EPeriodicSampleProbe(config, SimpleWriter<T>)
-{}
+{
+}
 
 template <typename T>
 inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config,
                                                          Callback<void, std::ostream&, T> writer)
-                                                         : E2EProbe(config), m_writeData{writer}
+    : E2EProbe(config),
+      m_writeData{writer}
 {
     Time startTime;
     m_output = &std::cout;
-    if (auto file {config.Find("File")}; file)
+    if (auto file{config.Find("File")}; file)
     {
         m_of = std::ofstream(std::string((*file).value), std::ios::out);
         m_output = &m_of;
         (*file).processed = true;
     }
-    if (auto header {config.Find("Header")}; header)
+    if (auto header{config.Find("Header")}; header)
     {
         *m_output << (*header).value << std::endl;
         (*header).processed = true;
     }
-    if (auto unit {config.Find("Unit")}; unit)
+    if (auto unit{config.Find("Unit")}; unit)
     {
         m_unit = (*unit).value;
         (*unit).processed = true;
     }
-    if (auto interval {config.Find("Interval")}; interval)
+    if (auto interval{config.Find("Interval")}; interval)
     {
         m_interval = Time(std::string((*interval).value));
         (*interval).processed = true;
@@ -129,7 +135,7 @@ inline E2EPeriodicSampleProbe<T>::E2EPeriodicSampleProbe(const E2EConfig& config
     {
         m_interval = MilliSeconds(500);
     }
-    if (auto start {config.Find("Start")}; start)
+    if (auto start{config.Find("Start")}; start)
     {
         startTime = Time(std::string((*start).value));
         (*start).processed = true;
@@ -168,11 +174,12 @@ E2EPeriodicSampleProbe<T>::SetWriter(void writer(std::ostream&, T))
     m_writeData = writer;
 }
 
-template<typename T>
-void TraceOldNewValue(void func(T value, Ptr<E2EPeriodicSampleProbe<T>> probe),
-                      Ptr<E2EPeriodicSampleProbe<T>> probe,
-                      T oldValue,
-                      T newValue)
+template <typename T>
+void
+TraceOldNewValue(void func(T value, Ptr<E2EPeriodicSampleProbe<T>> probe),
+                 Ptr<E2EPeriodicSampleProbe<T>> probe,
+                 T oldValue,
+                 T newValue)
 {
     func(newValue, probe);
 }
@@ -182,11 +189,12 @@ void TraceRx(void func(uint32_t, Ptr<E2EPeriodicSampleProbe<uint32_t>>),
              Ptr<const Packet> packet,
              const Address& address);
 
-template<typename T, typename U>
-void ConnectTraceToSocket(Ptr<T> application,
-                          const std::string& trace,
-                          Ptr<E2EPeriodicSampleProbe<U>> probe,
-                          void func(U, Ptr<E2EPeriodicSampleProbe<U>>))
+template <typename T, typename U>
+void
+ConnectTraceToSocket(Ptr<T> application,
+                     const std::string& trace,
+                     Ptr<E2EPeriodicSampleProbe<U>> probe,
+                     void func(U, Ptr<E2EPeriodicSampleProbe<U>>))
 {
     Ptr<Socket> socket = application->GetSocket();
     NS_ABORT_MSG_UNLESS(socket, "No socket found for application");

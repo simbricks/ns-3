@@ -33,20 +33,22 @@ namespace ns3
 
 NS_LOG_COMPONENT_DEFINE("E2ENetwork");
 
-E2ENetwork::E2ENetwork(const E2EConfig& config) : E2EComponent(config)
+E2ENetwork::E2ENetwork(const E2EConfig& config)
+    : E2EComponent(config)
 {
     NS_ABORT_MSG_IF(GetId().empty(), "Network has no id");
     NS_ABORT_MSG_IF(GetIdPath().size() != 2,
-        "Network '" << GetId() << "' has invalid path length of " << GetIdPath().size());
+                    "Network '" << GetId() << "' has invalid path length of "
+                                << GetIdPath().size());
     NS_ABORT_MSG_IF(GetType().empty(), "Network '" << GetId() << "' has no type");
 }
 
 Ptr<E2ENetwork>
 E2ENetwork::CreateNetwork(const E2EConfig& config)
 {
-    auto type_opt {config.Find("Type")};
+    auto type_opt{config.Find("Type")};
     NS_ABORT_MSG_UNLESS(type_opt, "Host has no type");
-    std::string_view type {(*type_opt).value};
+    std::string_view type{(*type_opt).value};
     (*type_opt).processed = true;
 
     if (type == "Simbricks")
@@ -65,12 +67,13 @@ E2ENetwork::GetNetDevice()
     return m_netDevice;
 }
 
-E2ENetworkSimbricks::E2ENetworkSimbricks(const E2EConfig& config) : E2ENetwork(config)
+E2ENetworkSimbricks::E2ENetworkSimbricks(const E2EConfig& config)
+    : E2ENetwork(config)
 {
-    Ptr<simbricks::SimbricksNetDevice> netDevice =
-      CreateObject<simbricks::SimbricksNetDevice>();
+    Ptr<simbricks::SimbricksNetDevice> netDevice = CreateObject<simbricks::SimbricksNetDevice>();
     if (not config.SetAttrIfContained<StringValue, std::string>(netDevice,
-        "UnixSocket", "UnixSocket"))
+                                                                "UnixSocket",
+                                                                "UnixSocket"))
     {
         NS_LOG_WARN("No Unix socket path for Simbricks host '" << GetId() << "' given.");
     }
@@ -87,16 +90,18 @@ E2ENetworkSimbricks::E2ENetworkSimbricks(const E2EConfig& config) : E2ENetwork(c
     m_netDevice = netDevice;
 }
 
-E2ENetworkTrunk::E2ENetworkTrunk(const E2EConfig& config) : E2EComponent(config)
+E2ENetworkTrunk::E2ENetworkTrunk(const E2EConfig& config)
+    : E2EComponent(config)
 {
     NS_ABORT_MSG_IF(GetId().empty(), "Trunk has no id");
     NS_ABORT_MSG_IF(GetIdPath().size() != 1,
-        "Trunk '" << GetId() << "' has invalid path length of " << GetIdPath().size());
-    
+                    "Trunk '" << GetId() << "' has invalid path length of " << GetIdPath().size());
+
     m_trunk = CreateObject<simbricks::SimbricksTrunk>();
 
     if (not config.SetAttrIfContained<StringValue, std::string>(m_trunk,
-        "UnixSocket", "UnixSocket"))
+                                                                "UnixSocket",
+                                                                "UnixSocket"))
     {
         NS_LOG_WARN("No Unix socket path for Simbricks trunk '" << GetId() << "' given.");
     }
@@ -115,8 +120,8 @@ Ptr<NetDevice>
 E2ENetworkTrunk::AddDevice(int id)
 {
     NS_ABORT_MSG_IF(id <= m_current_id,
-        "Wrong ordering of trunk devices, current id: " << m_current_id << ", given id: " << id
-        << ", for trunk: " << GetId());
+                    "Wrong ordering of trunk devices, current id: "
+                        << m_current_id << ", given id: " << id << ", for trunk: " << GetId());
     m_current_id = id;
     return m_trunk->AddNetDev();
 }
@@ -128,7 +133,7 @@ E2ENetworkTrunkDevice::E2ENetworkTrunkDevice(const E2EConfig& config,
 {
     auto trunkId = config.Find("Trunk");
     NS_ABORT_MSG_UNLESS(trunkId,
-        "Trunk device '" << GetId() << "' does not contain a trunk to use");
+                        "Trunk device '" << GetId() << "' does not contain a trunk to use");
 
     auto trunk = root->GetE2EComponent<E2ENetworkTrunk>((*trunkId).value);
     NS_ABORT_MSG_UNLESS(trunk, "Trunk '" << (*trunkId).value << "' not found");

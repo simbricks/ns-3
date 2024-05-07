@@ -23,15 +23,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "e2e-application.h"
 #include "e2e-probe.h"
+
+#include "e2e-application.h"
 
 namespace ns3
 {
 
 NS_LOG_COMPONENT_DEFINE("E2EProbe");
 
-E2EProbe::E2EProbe(const E2EConfig& config) : E2EComponent(config)
+E2EProbe::E2EProbe(const E2EConfig& config)
+    : E2EComponent(config)
 {
     NS_ABORT_MSG_IF(GetId().empty(), "Probe has no id");
     NS_ABORT_MSG_IF(GetType().empty(), "Probe '" << GetId() << "' has no type");
