@@ -40,16 +40,17 @@ E2EApplication::E2EApplication(const E2EConfig& config)
 {
     NS_ABORT_MSG_IF(GetId().empty(), "Application has no id");
     NS_ABORT_MSG_IF(GetIdPath().size() != 3,
-        "Application '" << GetId() << "' has invalid path length of " << GetIdPath().size());
+                    "Application '" << GetId() << "' has invalid path length of "
+                                    << GetIdPath().size());
     NS_ABORT_MSG_IF(GetType().empty(), "Application '" << GetId() << "' has no type");
 }
 
 Ptr<E2EApplication>
 E2EApplication::CreateApplication(const E2EConfig& config)
 {
-    auto type_opt {config.Find("Type")};
+    auto type_opt{config.Find("Type")};
     NS_ABORT_MSG_UNLESS(type_opt, "Application has no type");
-    std::string_view type {(*type_opt).value};
+    std::string_view type{(*type_opt).value};
     (*type_opt).processed = true;
 
     if (type == "PacketSink")
@@ -74,12 +75,14 @@ E2EApplication::CreateApplication(const E2EConfig& config)
     }
 }
 
-Ptr<Application> E2EApplication::GetApplication()
+Ptr<Application>
+E2EApplication::GetApplication()
 {
     return m_application;
 }
 
-E2EGenericApplication::E2EGenericApplication(const E2EConfig& config) : E2EApplication(config)
+E2EGenericApplication::E2EGenericApplication(const E2EConfig& config)
+    : E2EApplication(config)
 {
     auto typeId = config.Find("TypeId");
     NS_ABORT_MSG_UNLESS(typeId, "Generic application does not contain a TypeId");
@@ -90,16 +93,19 @@ E2EGenericApplication::E2EGenericApplication(const E2EConfig& config) : E2EAppli
     m_application = m_factory.Create<Application>();
 }
 
-E2EPacketSink::E2EPacketSink(const E2EConfig& config) : E2EApplication(config)
+E2EPacketSink::E2EPacketSink(const E2EConfig& config)
+    : E2EApplication(config)
 {
     m_factory.SetTypeId("ns3::PacketSink");
     if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
-        "Protocol", "Protocol"))
+                                                                   "Protocol",
+                                                                   "Protocol"))
     {
         NS_ABORT_MSG("Packet sink '" << GetId() << "' requires a protocol");
     }
     if (not config.SetFactoryIfContained<AddressValue, InetSocketAddress>(m_factory,
-        "Local", "Local"))
+                                                                          "Local",
+                                                                          "Local"))
     {
         NS_ABORT_MSG("Packet sink '" << GetId() << "' requires a local address");
     }
@@ -113,7 +119,7 @@ E2EPacketSink::AddProbe(const E2EConfig& config)
     Ptr<PacketSink> sink = StaticCast<PacketSink>(m_application);
 
     std::string_view type;
-    if (auto t {config.Find("Type")}; t)
+    if (auto t{config.Find("Type")}; t)
     {
         type = (*t).value;
         (*t).processed = true;
@@ -125,23 +131,27 @@ E2EPacketSink::AddProbe(const E2EConfig& config)
 
     if (type == "Rx")
     {
-        Ptr<E2EPeriodicSampleProbe<uint32_t>> probe
-            = Create<E2EPeriodicSampleProbe<uint32_t>>(config);
-        sink->TraceConnectWithoutContext("Rx", MakeBoundCallback(TraceRx,
-            E2EPeriodicSampleProbe<uint32_t>::AddValue, probe));
+        Ptr<E2EPeriodicSampleProbe<uint32_t>> probe =
+            Create<E2EPeriodicSampleProbe<uint32_t>>(config);
+        sink->TraceConnectWithoutContext(
+            "Rx",
+            MakeBoundCallback(TraceRx, E2EPeriodicSampleProbe<uint32_t>::AddValue, probe));
     }
 }
 
-E2EBulkSender::E2EBulkSender(const E2EConfig& config) : E2EApplication(config)
+E2EBulkSender::E2EBulkSender(const E2EConfig& config)
+    : E2EApplication(config)
 {
     m_factory.SetTypeId("ns3::BulkSendApplication");
     if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
-        "Protocol", "Protocol"))
+                                                                   "Protocol",
+                                                                   "Protocol"))
     {
         NS_ABORT_MSG("Bulk send application '" << GetId() << "' requires a protocol");
     }
     if (not config.SetFactoryIfContained<AddressValue, InetSocketAddress>(m_factory,
-        "Remote", "Remote"))
+                                                                          "Remote",
+                                                                          "Remote"))
     {
         NS_ABORT_MSG("Bulk send application '" << GetId() << "' requires a remote address");
     }
@@ -157,7 +167,7 @@ E2EBulkSender::AddProbe(const E2EConfig& config)
     Ptr<BulkSendApplication> sender = StaticCast<BulkSendApplication>(m_application);
 
     std::string_view type;
-    if (auto t {config.Find("Type")}; t)
+    if (auto t{config.Find("Type")}; t)
     {
         type = (*t).value;
         (*t).processed = true;
@@ -175,29 +185,40 @@ E2EBulkSender::AddProbe(const E2EConfig& config)
     {
         Ptr<E2EPeriodicSampleProbe<Time>> probe =
             Create<E2EPeriodicSampleProbe<Time>>(config,
-                MakeBoundCallback(TimeWriter, Time::Unit::MS));
-        Simulator::Schedule(startTime, ConnectTraceToSocket<BulkSendApplication, Time>, sender,
-            "RTT", probe, E2EPeriodicSampleProbe<Time>::UpdateValue);
+                                                 MakeBoundCallback(TimeWriter, Time::Unit::MS));
+        Simulator::Schedule(startTime,
+                            ConnectTraceToSocket<BulkSendApplication, Time>,
+                            sender,
+                            "RTT",
+                            probe,
+                            E2EPeriodicSampleProbe<Time>::UpdateValue);
     }
     else if (type == "Cwnd")
     {
         Ptr<E2EPeriodicSampleProbe<uint32_t>> probe =
             Create<E2EPeriodicSampleProbe<uint32_t>>(config);
-        Simulator::Schedule(startTime, ConnectTraceToSocket<BulkSendApplication, uint32_t>, sender,
-            "CongestionWindow", probe, E2EPeriodicSampleProbe<uint32_t>::UpdateValue);
+        Simulator::Schedule(startTime,
+                            ConnectTraceToSocket<BulkSendApplication, uint32_t>,
+                            sender,
+                            "CongestionWindow",
+                            probe,
+                            E2EPeriodicSampleProbe<uint32_t>::UpdateValue);
     }
 }
 
-E2EOnOffApp::E2EOnOffApp(const E2EConfig& config) : E2EApplication(config)
+E2EOnOffApp::E2EOnOffApp(const E2EConfig& config)
+    : E2EApplication(config)
 {
     m_factory.SetTypeId("ns3::OnOffApplication");
     if (not config.SetFactoryIfContained<StringValue, std::string>(m_factory,
-        "Protocol", "Protocol"))
+                                                                   "Protocol",
+                                                                   "Protocol"))
     {
         NS_ABORT_MSG("OnOff application '" << GetId() << "' requires a protocol");
     }
     if (not config.SetFactoryIfContained<AddressValue, InetSocketAddress>(m_factory,
-        "Remote", "Remote"))
+                                                                          "Remote",
+                                                                          "Remote"))
     {
         NS_ABORT_MSG("OnOff application '" << GetId() << "' requires a remote address");
     }
@@ -207,7 +228,7 @@ E2EOnOffApp::E2EOnOffApp(const E2EConfig& config) : E2EApplication(config)
     config.SetFactoryIfContained<StringValue, std::string>(m_factory, "OnTime", "OnTime");
     config.SetFactoryIfContained<StringValue, std::string>(m_factory, "OffTime", "OffTime");
     config.SetFactory(m_factory);
-    
+
     m_application = m_factory.Create<Application>();
 }
 

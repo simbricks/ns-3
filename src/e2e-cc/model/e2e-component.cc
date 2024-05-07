@@ -30,7 +30,8 @@ namespace ns3
 
 NS_LOG_COMPONENT_DEFINE("E2EComponent");
 
-E2EComponent::E2EComponent(const E2EConfig &config) : m_config{config}
+E2EComponent::E2EComponent(const E2EConfig& config)
+    : m_config{config}
 {
     auto id = config.Find("Id");
     if (id)
@@ -93,8 +94,8 @@ E2EComponent::AddE2EComponent(Ptr<E2EComponent> component)
 {
     if (not m_components.insert({component->GetComponentId(), component}).second)
     {
-        NS_ABORT_MSG("Component '" << component->GetId() << "' was already added to '"
-            << GetId() << "'");
+        NS_ABORT_MSG("Component '" << component->GetId() << "' was already added to '" << GetId()
+                                   << "'");
     }
 }
 
@@ -102,11 +103,11 @@ std::vector<std::string_view>
 E2EComponent::SplitIdPath(std::string_view id)
 {
     std::vector<std::string_view> idPath;
-    std::string_view path {id};
+    std::string_view path{id};
 
     while (not path.empty())
     {
-        std::string_view part {path};
+        std::string_view part{path};
         auto pos = part.find('/');
         if (pos == 0)
         {
