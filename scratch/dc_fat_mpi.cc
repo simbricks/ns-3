@@ -9,6 +9,13 @@
 #include <iomanip>
 #include <mpi.h>
 
+/*
+FatTree topology decribed in paper "A Scalable, Commodity Data Center Network Architecture, Mohammad AI-Fares, Alexander Loukissas, Amin Vadat; SIGCOMM'08"
+
+Example command to execute this script
+./ns3 run dc_fat_mpi --command-template="/usr/bin/mpiexec --allow-run-as-root -np 5 %s --num_pod=4"
+*/
+
 #define START 0.0
 #define END 0.01
 
@@ -49,7 +56,7 @@ void client(ns3::Ipv4Address add, ns3::Ptr<Node> node){
 
 int main (int argc, char *argv[])
 {
-	LogComponentEnable("PacketSink",(LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+	// LogComponentEnable("PacketSink",(LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
 	LogComponentEnable("DataCenter",(LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
 
 	bool nix = true;
@@ -57,9 +64,11 @@ int main (int argc, char *argv[])
     bool tracing = false;
     bool testing = false;
     bool verbose = false;
+	int num_pod = 4;
 
     // Parse command line
     CommandLine cmd(__FILE__);
+	cmd.AddValue("num_pod", "number of pod in FatTree topoplogy", num_pod);
     cmd.AddValue("nix", "Enable the use of nix-vector or global routing", nix);
     cmd.AddValue("nullmsg", "Enable the use of null-message synchronization", nullmsg);
     cmd.AddValue("tracing", "Enable pcap tracing", tracing);
@@ -85,24 +94,28 @@ int main (int argc, char *argv[])
     uint32_t systemId = MpiInterface::GetSystemId();
     uint32_t systemCount = MpiInterface::GetSize();
 
-	int k = 4;
-	int core_k = (k/2)*(k/2);
+	int k = num_pod; // number of pods
+	int core_k = (k/2)*(k/2); //number of core switches
 
+	// need (number of pods + 1) Logical processors
+	// Each pod in one LP + 1 LP for all the core switches 
     if (systemCount != k+1)
     {
-        NS_LOG_INFO("Check number of logical processors.");
+        NS_LOG_INFO("current systemCount: " << systemCount);
+		NS_LOG_INFO("current num_pod: " << num_pod);
+		NS_LOG_INFO("logical processors should be 1 larger than num_pod");
         return 1;
     }
 
-
+	// Create core switch nodes in systemId == 4
 	NodeContainer core;
 	NodeContainer agg[k][2];
 	core.Create(core_k,k);
 
 
-	NodeContainer coreagg[core_k][k];
-	NodeContainer aggint[k][k/2][k/2];
-	NodeContainer edge[k][k/2][k/2];
+	NodeContainer coreagg[core_k][k]; // core to aggregation switch link nodes
+	NodeContainer aggint[k][k/2][k/2]; // aggregation swithces internal link nodes
+	NodeContainer edge[k][k/2][k/2]; // edge to host link nodes
 
 	NetDeviceContainer coreaggd[core_k][k];
 	NetDeviceContainer aggintd[k][k/2][k/2];
@@ -130,11 +143,13 @@ int main (int argc, char *argv[])
     inc_address_base(char_array, sub);
 	address.SetBase (char_array, "255.255.255.0");
 
+	// Create aggregation switch nodes
 	for(int i=0;i<k;i++){
 		agg[i][0].Create(k/2,i);
 		agg[i][1].Create(k/2,i);
 	}
 
+	// Create ptp links between core and aggregation switches
 	for(int i=0;i<core_k;i++){
 		for(int j=0;j<k;j++){
 			coreagg[i][j].Add(core.Get(i));
@@ -142,7 +157,8 @@ int main (int argc, char *argv[])
 			coreaggd[i][j] = ptp1.Install (coreagg[i][j]);
 		}
 	}
-
+	
+	// Create ptp links between aggregation and edge switches
 	for(int i=0;i<k;i++){
 		for(int j=0;j<k/2;j++){
 			for(int l=0;l<k/2;l++){
@@ -153,6 +169,7 @@ int main (int argc, char *argv[])
 		}
 	}
 
+	// Create ptp links between edge swithces and end-hosts
 	for(int i=0;i<k;i++){
 		for(int j=0;j<k/2;j++){
 			for(int l=0;l<k/2;l++){
