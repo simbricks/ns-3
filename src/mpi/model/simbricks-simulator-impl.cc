@@ -78,7 +78,7 @@ SimbricksSimulatorImpl::SimbricksSimulatorImpl ()
   m_unscheduledEvents = 0;
   m_eventCount = 0;
   m_eventsWithContextEmpty = true;
-  m_main = SystemThread::Self ();
+  m_main = std::this_thread::get_id();
 }
 
 SimbricksSimulatorImpl::~SimbricksSimulatorImpl ()
@@ -123,7 +123,7 @@ SimbricksSimulatorImpl::SetScheduler (ObjectFactory schedulerFactory)
   NS_LOG_FUNCTION (this << schedulerFactory);
   Ptr<Scheduler> scheduler = schedulerFactory.Create<Scheduler> ();
 
-  if (m_events != 0)
+  if (m_events)
     {
       while (!m_events->IsEmpty ())
         {
@@ -177,7 +177,7 @@ SimbricksSimulatorImpl::ProcessEventsWithContext (void)
   // swap queues
   EventsWithContext eventsWithContext;
   {
-    CriticalSection cs (m_eventsWithContextMutex);
+    std::unique_lock lock{m_eventsWithContextMutex};
     m_eventsWithContext.swap (eventsWithContext);
     m_eventsWithContextEmpty = true;
   }
@@ -228,7 +228,7 @@ SimbricksSimulatorImpl::Run (void)
 
   auto t2 = high_resolution_clock::now();
 
-  m_main = SystemThread::Self ();
+  m_main = std::this_thread::get_id ();
   ProcessEventsWithContext ();
   m_stop = false;
 
@@ -267,7 +267,7 @@ EventId
 SimbricksSimulatorImpl::Schedule (Time const &delay, EventImpl *event)
 {
   NS_LOG_FUNCTION (this << delay.GetTimeStep () << event);
-  NS_ASSERT_MSG (SystemThread::Equals (m_main), "Simulator::Schedule Thread-unsafe invocation!");
+  NS_ASSERT_MSG (m_main == std::this_thread::get_id(), "Simulator::Schedule Thread-unsafe invocation!");
 
   NS_ASSERT_MSG (delay.IsPositive (), "SimbricksSimulatorImpl::Schedule(): Negative delay");
   Time tAbsolute = delay + TimeStep (m_currentTs);
@@ -288,7 +288,7 @@ SimbricksSimulatorImpl::ScheduleWithContext (uint32_t context, Time const &delay
 {
   NS_LOG_FUNCTION (this << context << delay.GetTimeStep () << event);
 
-  if (SystemThread::Equals (m_main))
+  if (m_main == std::this_thread::get_id())
     {
       Time tAbsolute = delay + TimeStep (m_currentTs);
       Scheduler::Event ev;
@@ -308,7 +308,7 @@ SimbricksSimulatorImpl::ScheduleWithContext (uint32_t context, Time const &delay
       ev.timestamp = delay.GetTimeStep ();
       ev.event = event;
       {
-        CriticalSection cs (m_eventsWithContextMutex);
+        std::unique_lock lock{m_eventsWithContextMutex};
         m_eventsWithContext.push_back (ev);
         m_eventsWithContextEmpty = false;
       }
@@ -318,7 +318,7 @@ SimbricksSimulatorImpl::ScheduleWithContext (uint32_t context, Time const &delay
 EventId
 SimbricksSimulatorImpl::ScheduleNow (EventImpl *event)
 {
-  NS_ASSERT_MSG (SystemThread::Equals (m_main), "Simulator::ScheduleNow Thread-unsafe invocation!");
+  NS_ASSERT_MSG (m_main == std::this_thread::get_id(), "Simulator::ScheduleNow Thread-unsafe invocation!");
 
   Scheduler::Event ev;
   ev.impl = event;
@@ -334,7 +334,7 @@ SimbricksSimulatorImpl::ScheduleNow (EventImpl *event)
 EventId
 SimbricksSimulatorImpl::ScheduleDestroy (EventImpl *event)
 {
-  NS_ASSERT_MSG (SystemThread::Equals (m_main), "Simulator::ScheduleDestroy Thread-unsafe invocation!");
+  NS_ASSERT_MSG (m_main == std::this_thread::get_id(), "Simulator::ScheduleDestroy Thread-unsafe invocation!");
 
   EventId id (Ptr<EventImpl> (event, false), m_currentTs, 0xffffffff, 2);
   m_destroyEvents.push_back (id);

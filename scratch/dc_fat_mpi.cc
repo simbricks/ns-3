@@ -99,7 +99,7 @@ int main (int argc, char *argv[])
 
 	// need (number of pods + 1) Logical processors
 	// Each pod in one LP + 1 LP for all the core switches 
-    if (systemCount != k+1)
+    if (systemCount != (uint32_t)k+1)
     {
         NS_LOG_INFO("current systemCount: " << systemCount);
 		NS_LOG_INFO("current num_pod: " << num_pod);
@@ -221,7 +221,7 @@ int main (int argc, char *argv[])
 		}
 	}
 
-	for(int i=0;i<4;i++){
+	for(uint32_t i=0;i<4;i++){
 		// if(!systemId) LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
 		if(systemId==i){
 			sink(edgei[i][0][0].GetAddress(1), edge[i][0][0].Get(1));

@@ -124,7 +124,7 @@ SimbricksMpiInterface::Enable (int* pargc, char*** pargv)
   m_sid = atoi((*pargv)[1]);
   m_size = atoi((*pargv)[2]);
   m_dir = (*pargv)[3];
-  // std::cout << "Sid is " << m_sid << std::flush;
+  NS_LOG_INFO ("Sid is " << m_sid );
   // assert(0);
 }
 
@@ -186,7 +186,7 @@ void SimbricksMpiInterface::ReceivedPacket (const void *buf, size_t len, uint64_
 
     Time rxTime (tim);
 
-    int count = sizeof (time) + sizeof (node) + sizeof (dev);
+    // int count = sizeof (time) + sizeof (node) + sizeof (dev);
     Ptr<Packet> packet = Create<Packet> (reinterpret_cast<uint8_t *> (pData), len - 16);
     // Find the correct node/device to schedule receive event
     Ptr<Node> pNode = NodeList::GetNode (node);
@@ -212,7 +212,7 @@ void SimbricksMpiInterface::ReceivedPacket (const void *buf, size_t len, uint64_
 void SimbricksMpiInterface::SendSyncEvent (uint64_t delay)
 {
 
-  for(int i=0; i<connsRev[delay].size(); i++){
+  for(uint64_t i=0; i<connsRev[delay].size(); i++){
     // std::cout << "\n" << connsRev[delay].size() << " " << delay;
     int systemId = connsRev[delay][i];
     volatile union SimbricksProtoNetMsg *msg = AllocTx (systemId);
@@ -223,7 +223,7 @@ void SimbricksMpiInterface::SendSyncEvent (uint64_t delay)
     //     SIMBRICKS_PROTO_NET_N2D_OWN_DEV;
     SimbricksBaseIfOutSend(&m_nsif[systemId]->base, &msg->base, SIMBRICKS_PROTO_MSG_TYPE_SYNC);
   }
-  for(int i=0; i<connsRev[delay].size(); i++){
+  for(uint64_t i=0; i<connsRev[delay].size(); i++){
     int systemId = connsRev[delay][i];
     while (Poll (systemId));
   }
@@ -261,7 +261,7 @@ uint8_t SimbricksMpiInterface::Poll (int systemId)
 
 void SimbricksMpiInterface::InitMap (){
   NodeContainer c = NodeContainer::GetGlobal ();
-  int systemId = MpiInterface::GetSystemId();
+  uint32_t systemId = MpiInterface::GetSystemId();
   for (NodeContainer::Iterator iter = c.Begin (); iter != c.End (); ++iter)
     {
       if ((*iter)->GetSystemId () != systemId)
@@ -278,7 +278,7 @@ void SimbricksMpiInterface::InitMap (){
               continue;
             }
           Ptr<Channel> channel = localNetDevice->GetChannel ();
-          if (channel == 0)
+          if (!channel)
             {
               continue;
             }
@@ -319,7 +319,7 @@ void SimbricksMpiInterface::InitMap (){
             Simulator::ScheduleNow (&SimbricksMpiInterface::SendSyncEvent, delayps);
           }
           bool flag = true;
-          for(int i=0; i<connsRev[delayps].size(); i++){
+          for(uint64_t i=0; i<connsRev[delayps].size(); i++){
             if(connsRev[delayps][i]==remoteNode->GetSystemId ())
               flag = false;            
           }
@@ -331,7 +331,7 @@ void SimbricksMpiInterface::InitMap (){
 
 void SimbricksMpiInterface::SetupInterconnections (){
 
-  int systemId = MpiInterface::GetSystemId();
+  uint32_t systemId = MpiInterface::GetSystemId();
   int num_conns = conns[systemId].size();
   ests = (struct SimBricksBaseIfEstablishData*)malloc(sizeof(struct SimBricksBaseIfEstablishData)*num_conns);
 
@@ -344,8 +344,8 @@ void SimbricksMpiInterface::SetupInterconnections (){
     m_pollDelay[i->first] = Time(PicoSeconds (m_bifparam[i->first]->sync_interval));
     m_bifparam[i->first]->link_latency = i->second;
 
-    int a,b;
-    if(systemId>i->first){
+    uint32_t a,b;
+    if(systemId > i->first){
       a=i->first;
       b=systemId;
     }
@@ -357,10 +357,9 @@ void SimbricksMpiInterface::SetupInterconnections (){
     std::string shm_path = m_dir+"sim_shm"+std::to_string(a)+"_"+std::to_string(b), sock_path=m_dir+"sim_socket"+std::to_string(a)+"_"+std::to_string(b);
     m_bifparam[i->first]->sock_path = sock_path.c_str();
 
-    int ret;
     int sync = m_bifparam[i->first]->sync_mode;
     m_nsif[i->first] = new SimbricksNetIf();
-    if(a==systemId) {while(access(sock_path.c_str(), R_OK));}
+    if(a == systemId) {while(access(sock_path.c_str(), R_OK));}
     else {
         m_pool[i->first] = new SimbricksBaseIfSHMPool();
         struct SimbricksBaseIf *netif = &m_nsif[i->first]->base;
