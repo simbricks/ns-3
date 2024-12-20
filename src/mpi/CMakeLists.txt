@@ -5,6 +5,15 @@ if(${ENABLE_EXAMPLES})
   )
 endif()
 
+set(simbricks_path $ENV{SIMBRICKS_PATH})
+
+include_directories(${simbricks_path}/lib)
+link_libraries(
+  ${simbricks_path}/lib/simbricks/nicif/libnicif.a
+  ${simbricks_path}/lib/simbricks/network/libnetwork.a
+  ${simbricks_path}/lib/simbricks/base/libbase.a
+)
+
 build_lib(
   LIBNAME mpi
   SOURCE_FILES
@@ -17,6 +26,8 @@ build_lib(
     model/parallel-communication-interface.h
     model/remote-channel-bundle-manager.cc
     model/remote-channel-bundle.cc
+    model/simbricks-simulator-impl.cc
+    model/simbricks-mpi-interface.cc
   HEADER_FILES
     model/mpi-interface.h
     model/mpi-receiver.h
