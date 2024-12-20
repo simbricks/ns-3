@@ -9,6 +9,6 @@ cd $DIR
 
 if [ "$1" = "configure" ] ; then
   ./ns3 clean
-  ./ns3 configure --build-profile=default --enable-examples
+  ./ns3 configure --build-profile=default --enable-examples --enable-mpi
 fi
 ./ns3 build

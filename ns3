@@ -1132,7 +1132,7 @@ def run_step(args, target_to_run, target_args):
     target_args += args.program_args
 
     if args.shell:
-        target_to_run = "bash"
+        target_to_run = "/bin/bash"
         use_shell = True
     else:
         # running a python script?
