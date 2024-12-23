@@ -70,6 +70,13 @@ SimbricksMpiInterface::GetTypeId (void)
   return tid;
 }
 
+MPI_Comm SimbricksMpiInterface::GetCommunicator()
+{
+  return NULL;
+  }
+
+void SimbricksMpiInterface::Enable(MPI_Comm communicator){}
+
 void
 SimbricksMpiInterface::Destroy ()
 {

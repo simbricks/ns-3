@@ -27,6 +27,7 @@
 
 #include "granted-time-window-mpi-interface.h"
 #include "null-message-mpi-interface.h"
+#include "simbricks-mpi-interface.h"
 
 #include <ns3/global-value.h>
 #include <ns3/log.h>
@@ -106,6 +107,11 @@ MpiInterface::SetParallelSimulatorImpl()
         {
             g_parallelCommunicationInterface = new GrantedTimeWindowMpiInterface();
             useDefault = false;
+        }
+        else if (simulationType == "ns3::SimbricksSimulatorImpl")
+        {
+          g_parallelCommunicationInterface = new SimbricksMpiInterface();
+          useDefault = false;
         }
     }
 

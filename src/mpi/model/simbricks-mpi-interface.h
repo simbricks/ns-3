@@ -106,7 +106,9 @@ public:
    * Serialize and send a packet to the specified node and net device
    */
   virtual void SendPacket (Ptr<Packet> p, const Time &rxTime, uint32_t node, uint32_t dev);
-
+  MPI_Comm GetCommunicator() override;
+  void Enable(MPI_Comm communicator) override;
+  
   static uint32_t m_sid;
   static bool     m_initialized;
   static bool     m_enabled;
