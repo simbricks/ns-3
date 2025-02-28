@@ -19,5 +19,5 @@ do
 echo "Process $c with PID $! started"
 done
 
-trap "killall $1; echo SIGINT; exit 1" INT
+trap "killall ns3.38-$1-default; echo SIGINT; exit 1" INT
 wait
