@@ -17,7 +17,8 @@ Example command to execute this script
 */
 
 #define START 0.0
-#define END 0.01
+#define END 1
+#define NUM_STEPS 20
 
 using namespace ns3;
 
@@ -52,6 +53,13 @@ void client(ns3::Ipv4Address add, ns3::Ptr<Node> node){
 	ApplicationContainer clientApp = client.Install (node);
 	clientApp.Start(Seconds (START));
 	clientApp.Stop (Seconds (END));
+}
+
+void PrintSimProgress(){
+	float step = (END - START) / NUM_STEPS;
+
+	NS_LOG_INFO("Sim. Time: " << Simulator::Now().GetMilliSeconds() << " ms");
+	Simulator::Schedule(Seconds(step), &PrintSimProgress);
 }
 
 int main (int argc, char *argv[])
@@ -236,6 +244,9 @@ int main (int argc, char *argv[])
 	}
 
 	// Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting",BooleanValue(true));
+	if (systemId == 0)
+		Simulator::Schedule(Seconds(0.0), &PrintSimProgress);
+
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Stop(Seconds(END));
 
