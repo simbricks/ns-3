@@ -104,22 +104,25 @@ int main (int argc, char *argv[])
 
 	int k = num_pod; // number of pods
 	int core_k = (k/2)*(k/2); //number of core switches
+	
+	int total_racks = k * ( k / 2 );
+	int racks_per_pod = k / 2;
+	int per_lp_racks = total_racks / systemCount;
+	int rack_idx_start = 0;
+	
+    // if (systemCount != (uint32_t)k+1)
+    // {
+    //     NS_LOG_INFO("current systemCount: " << systemCount);
+	// 	NS_LOG_INFO("current num_pod: " << num_pod);
+	// 	NS_LOG_INFO("logical processors should be 1 larger than num_pod");
+    //     return 1;
+    // }
 
-	// need (number of pods + 1) Logical processors
-	// Each pod in one LP + 1 LP for all the core switches 
-    if (systemCount != (uint32_t)k+1)
-    {
-        NS_LOG_INFO("current systemCount: " << systemCount);
-		NS_LOG_INFO("current num_pod: " << num_pod);
-		NS_LOG_INFO("logical processors should be 1 larger than num_pod");
-        return 1;
-    }
-
-	// Create core switch nodes in systemId == 4
+	// Create core switch nodes in systemId == 0
 	NodeContainer core;
 	NodeContainer agg[k][2];
-	core.Create(core_k,k);
-
+	core.Create(core_k,0);
+	
 
 	NodeContainer coreagg[core_k][k]; // core to aggregation switch link nodes
 	NodeContainer aggint[k][k/2][k/2]; // aggregation swithces internal link nodes
@@ -144,17 +147,29 @@ int main (int argc, char *argv[])
 	InternetStackHelper stack;
 
 	Ipv4AddressHelper address;
-
+	
 	int sub = 0;
 	char* char_array = new char[10];
-
+	
     inc_address_base(char_array, sub);
 	address.SetBase (char_array, "255.255.255.0");
 
 	// Create aggregation switch nodes
 	for(int i=0;i<k;i++){
-		agg[i][0].Create(k/2,i);
-		agg[i][1].Create(k/2,i);
+		agg[i][0].Create(k/2,0);
+	}
+	
+	for (int i = 0; i < k; i++){
+		for (int j = 0; j < racks_per_pod; j++){
+			int lp_idx = i * racks_per_pod + j;
+			int sys_id = lp_idx / per_lp_racks;
+			if (systemId == 0)
+				NS_LOG_INFO("agg: " << lp_idx  << " SysId: " << sys_id);
+			Ptr<Node> node = CreateObject<Node>(sys_id);
+
+			agg[i][1].Add(node);
+		}
+
 	}
 
 	// Create ptp links between core and aggregation switches
@@ -177,12 +192,22 @@ int main (int argc, char *argv[])
 		}
 	}
 
+	// Create end-host nodes
+	for(int i=0;i<k;i++){
+		for(int j=0;j<k/2;j++){
+			int lp_idx = i * racks_per_pod + j;
+			int sys_id = lp_idx / per_lp_racks;
+			for(int l=0;l<k/2;l++){
+				edge[i][j][l].Create(1,sys_id);
+			}
+		}
+	}
+
 	// Create ptp links between edge swithces and end-hosts
 	for(int i=0;i<k;i++){
 		for(int j=0;j<k/2;j++){
 			for(int l=0;l<k/2;l++){
 				edge[i][j][l].Add(agg[i][1].Get(j));
-				edge[i][j][l].Create(1,i);
 				edged[i][j][l] = ptp3.Install (edge[i][j][l]);
 			}
 		}
@@ -196,7 +221,7 @@ int main (int argc, char *argv[])
 	for(int i=0;i<k;i++){
 		for(int j=0;j<k/2;j++){
 			for(int l=0;l<k/2;l++){
-				stack.Install(edge[i][j][l].Get(1));
+				stack.Install(edge[i][j][l].Get(0));
 			}
 		}
 	}
@@ -228,20 +253,58 @@ int main (int argc, char *argv[])
 			}
 		}
 	}
-
-	for(uint32_t i=0;i<4;i++){
-		// if(!systemId) LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
-		if(systemId==i){
-			sink(edgei[i][0][0].GetAddress(1), edge[i][0][0].Get(1));
-			client(edgei[i][0][0].GetAddress(1),edge[i][1][1].Get(1));
-			client(edgei[i][0][1].GetAddress(1),edge[i][1][1].Get(1));
-			client(edgei[i][0][0].GetAddress(1),edge[i][1][0].Get(1));
-			sink(edgei[i][0][1].GetAddress(1), edge[i][0][1].Get(1));
-			client(edgei[(i+1)%k][0][1].GetAddress(1),edge[i][1][0].Get(1));	
-			client(edgei[(i+2)%k][0][1].GetAddress(1),edge[i][0][0].Get(1));
-			client(edgei[(i+3)%k][0][1].GetAddress(1),edge[i][0][1].Get(1));
-		}
+/*
+for(uint32_t i=0;i<4;i++){
+	// if(!systemId) LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
+	if(systemId==i){
+		sink(edgei[i][0][0].GetAddress(1), edge[i][0][0].Get(1));
+		client(edgei[i][0][0].GetAddress(1),edge[i][1][1].Get(1));
+		client(edgei[i][0][1].GetAddress(1),edge[i][1][1].Get(1));
+		client(edgei[i][0][0].GetAddress(1),edge[i][1][0].Get(1));
+		sink(edgei[i][0][1].GetAddress(1), edge[i][0][1].Get(1));
+		client(edgei[(i+1)%k][0][1].GetAddress(1),edge[i][1][0].Get(1));	
+		client(edgei[(i+2)%k][0][1].GetAddress(1),edge[i][0][0].Get(1));
+		client(edgei[(i+3)%k][0][1].GetAddress(1),edge[i][0][1].Get(1));
 	}
+}
+*/
+
+
+	
+	for(uint32_t i = 0; i < systemCount; i++){
+		int rack_idx_end = rack_idx_start + per_lp_racks;
+		
+		// if(!systemId) LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
+		if(systemId == i){
+			NS_LOG_INFO("SystemId: " << systemId << " RackIdxStart: " << rack_idx_start << " RackIdxEnd: " << rack_idx_end);
+			for (int r = rack_idx_start; r < rack_idx_end; r++){
+				int pod_idx =  r / racks_per_pod;
+				int agg_idx = r % racks_per_pod;
+				if (agg_idx % 2){
+					// an odd rack, all hosts are clients send to sinks in the next pod
+					// client(edgei[(pod_idx+1) % k][agg_idx - 1][0].GetAddress(1),edge[pod_idx][agg_idx][0].Get(1));
+					// client(edgei[(pod_idx+1) % k][agg_idx - 1][1].GetAddress(1),edge[pod_idx][agg_idx][1].Get(1));
+					// NS_LOG_INFO("SystemId: " << systemId << " PodIdx: " << pod_idx << " AggIdx: " << agg_idx << " Client");
+				}
+				else{
+					sink(edgei[pod_idx][agg_idx][0].GetAddress(1), edge[pod_idx][agg_idx][0].Get(1));
+					sink(edgei[pod_idx][agg_idx][1].GetAddress(1), edge[pod_idx][agg_idx][1].Get(1));
+					NS_LOG_INFO("SystemId: " << systemId << " PodIdx: " << pod_idx << " AggIdx: " << agg_idx << " Sink");
+				}
+			}
+			// sink(edgei[i][0][0].GetAddress(1), edge[i][0][0].Get(1));
+			// client(edgei[i][0][0].GetAddress(1),edge[i][1][1].Get(1));
+			// client(edgei[i][0][1].GetAddress(1),edge[i][1][1].Get(1));
+			// client(edgei[i][0][0].GetAddress(1),edge[i][1][0].Get(1));
+			// sink(edgei[i][0][1].GetAddress(1), edge[i][0][1].Get(1));
+			// client(edgei[(i+1)%k][0][1].GetAddress(1),edge[i][1][0].Get(1));	
+			// client(edgei[(i+2)%k][0][1].GetAddress(1),edge[i][0][0].Get(1));
+			// client(edgei[(i+3)%k][0][1].GetAddress(1),edge[i][0][1].Get(1));
+		}
+		rack_idx_start = rack_idx_end;
+		
+	}
+	
 
 	// Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting",BooleanValue(true));
 	if (systemId == 0)
