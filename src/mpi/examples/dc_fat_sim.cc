@@ -1,0 +1,277 @@
+#include "ns3/core-module.h"
+#include "ns3/network-module.h"
+#include "ns3/csma-module.h"
+#include "ns3/internet-module.h"
+#include "ns3/point-to-point-module.h"
+#include "ns3/applications-module.h"
+#include "ns3/ipv4-global-routing-helper.h"
+#include "ns3/mpi-interface.h"
+
+/*
+
+Example execution command
+./fat_tree_run.sh dc_fat_sim 32
+ 
+ */
+
+#define START 0.0
+#define END 0.1
+#define NUM_STEPS 20
+
+using namespace ns3;
+
+NS_LOG_COMPONENT_DEFINE ("FatTree_Simbricks_MPI");
+
+void inc_address_base(char* array, int &sub){
+	std::string ip1 = "10.";
+	std::string ip2 = std::to_string(sub/256);
+	std::string ip3 = std::to_string(sub%256);
+	std::string ip4 = ".0";
+	ip1 = ip1+ip2+"."+ip3+ip4;
+	delete [] array;
+	array = new char[ip1.size()];
+	std::strcpy(array, ip1.c_str());
+	sub++;
+}
+
+void sink(ns3::Ipv4Address add, ns3::Ptr<Node> node){
+	PacketSinkHelper packetSinkHelper("ns3::TcpSocketFactory",InetSocketAddress(add,8080));
+	ApplicationContainer sinkApp = packetSinkHelper.Install(node);
+	sinkApp.Start(Seconds(START));
+	sinkApp.Stop(Seconds(END));
+}
+
+void client(ns3::Ipv4Address add, ns3::Ptr<Node> node){
+	OnOffHelper client("ns3::TcpSocketFactory", InetSocketAddress(add, 8080));
+	client.SetAttribute ("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1000000000000]"));
+	client.SetAttribute ("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+	client.SetAttribute ("DataRate", DataRateValue (DataRate ("1000Mbps")));
+	client.SetAttribute ("PacketSize", UintegerValue (200));
+	
+	ApplicationContainer clientApp = client.Install (node);
+	clientApp.Start(Seconds (START));
+	clientApp.Stop (Seconds (END));
+}
+
+void PrintSimProgress(){
+	float step = (END - START) / NUM_STEPS;
+
+	NS_LOG_INFO("Sim. Time: " << Simulator::Now().GetMilliSeconds() << " ms");
+	Simulator::Schedule(Seconds(step), &PrintSimProgress);
+}
+
+int main (int argc, char *argv[])
+{
+	// LogComponentEnable("SimbricksMpiInterface",(LogLevel)(LOG_LEVEL_FUNCTION | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+	// LogComponentEnable("SimbricksSimulatorImpl",(LogLevel)(LOG_LEVEL_FUNCTION | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+	// LogComponentEnable("PacketSink",(LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+	
+	LogComponentEnable("FatTree_Simbricks_MPI",(LogLevel)(LOG_LEVEL_FUNCTION | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+
+	GlobalValue::Bind("SimulatorImplementationType", StringValue("ns3::SimbricksSimulatorImpl"));
+	MpiInterface::Enable(&argc, &argv);
+
+	uint32_t systemId = MpiInterface::GetSystemId();
+    uint32_t systemCount = MpiInterface::GetSize();
+
+	// temporary hardcode it to 8
+	int num_pod = 8; 
+	int k = num_pod;
+	int core_k = (k/2)*(k/2);
+
+	int total_racks = k * ( k / 2 );
+	int racks_per_pod = k / 2;
+	int per_lp_racks = total_racks / systemCount;
+	int rack_idx_start = 0;
+
+	NodeContainer core;
+	NodeContainer agg[k][2];
+	core.Create(core_k,0);
+
+
+	NodeContainer coreagg[core_k][k];
+	NodeContainer aggint[k][k/2][k/2];
+	NodeContainer edge[k][k/2][k/2];
+
+	NetDeviceContainer coreaggd[core_k][k];
+	NetDeviceContainer aggintd[k][k/2][k/2];
+	NetDeviceContainer edged[k][k/2][k/2];
+	
+	Ipv4InterfaceContainer coreaggi[core_k][k];
+	Ipv4InterfaceContainer agginti[k][k/2][k/2];
+	Ipv4InterfaceContainer edgei[k][k/2][k/2];
+
+	PointToPointHelper ptp1;
+	ptp1.SetDeviceAttribute ("DataRate", StringValue ("10Gbps"));
+	ptp1.SetChannelAttribute ("Delay", StringValue ("500ns"));
+
+	InternetStackHelper stack;
+
+	Ipv4AddressHelper address;
+
+	int sub = 0;
+	char* char_array = new char[10];
+
+    inc_address_base(char_array, sub);
+	address.SetBase (char_array, "255.255.255.0");
+
+	// Create aggregation switch nodes
+	for(int i=0;i<k;i++){
+		agg[i][0].Create(k/2,0);
+	}
+
+	for (int i = 0; i < k; i++){
+		for (int j = 0; j < racks_per_pod; j++){
+			int lp_idx = i * racks_per_pod + j;
+			int sys_id = lp_idx / per_lp_racks;
+			if (systemId == 0)
+				NS_LOG_INFO("agg: " << lp_idx  << " SysId: " << sys_id);
+			Ptr<Node> node = CreateObject<Node>(sys_id);
+
+			agg[i][1].Add(node);
+		}
+
+	}
+	
+	// Create ptp links between core and aggregation switches
+	for(int i=0;i<core_k;i++){
+		for(int j=0;j<k;j++){
+			coreagg[i][j].Add(core.Get(i));
+			coreagg[i][j].Add(agg[j][0].Get(i/(k/2)));
+			coreaggd[i][j] = ptp1.Install (coreagg[i][j]);
+		}
+	}
+
+	// Create ptp links between aggregation and edge switches
+	for(int i=0;i<k;i++){
+		for(int j=0;j<k/2;j++){
+			for(int l=0;l<k/2;l++){
+				aggint[i][j][l].Add(agg[i][0].Get(j));
+				aggint[i][j][l].Add(agg[i][1].Get(l));
+				aggintd[i][j][l] = ptp1.Install (aggint[i][j][l]);
+			}
+		}
+	}
+
+
+	// Create end-host nodes
+	for(int i=0;i<k;i++){
+		for(int j=0;j<k/2;j++){
+			int lp_idx = i * racks_per_pod + j;
+			int sys_id = lp_idx / per_lp_racks;
+			for(int l=0;l<k/2;l++){
+				edge[i][j][l].Create(1,sys_id);
+			}
+		}
+	}
+
+	for(int i=0;i<k;i++){
+		for(int j=0;j<k/2;j++){
+			for(int l=0;l<k/2;l++){
+				edge[i][j][l].Add(agg[i][1].Get(j));
+				edged[i][j][l] = ptp1.Install (edge[i][j][l]);
+			}
+		}
+	}
+
+	stack.Install(core);
+	for(int i=0;i<k;i++){
+		stack.Install(agg[i][0]);
+		stack.Install(agg[i][1]);
+	}
+	for(int i=0;i<k;i++){
+		for(int j=0;j<k/2;j++){
+			for(int l=0;l<k/2;l++){
+				stack.Install(edge[i][j][l].Get(0));
+			}
+		}
+	}
+
+	for(int i=0;i<core_k;i++){
+		for(int j=0;j<k;j++){
+			coreaggi[i][j] = address.Assign(coreaggd[i][j]);
+			inc_address_base(char_array, sub);
+			address.SetBase (char_array, "255.255.255.0");
+		}
+	}
+
+	for(int i=0;i<k;i++){
+		for(int j=0;j<k/2;j++){
+			for(int l=0;l<k/2;l++){
+				agginti[i][j][l] = address.Assign(aggintd[i][j][l]);
+				inc_address_base(char_array, sub);
+				address.SetBase (char_array, "255.255.255.0");
+			}
+		}
+	}
+
+	for(int i=0;i<k;i++){
+		for(int j=0;j<k/2;j++){
+			for(int l=0;l<k/2;l++){
+				edgei[i][j][l] = address.Assign(edged[i][j][l]);
+				inc_address_base(char_array, sub);
+				address.SetBase (char_array, "255.255.255.0");
+			}
+		}
+	}
+
+
+	
+	for(uint32_t i = 0; i < systemCount; i++){
+		int rack_idx_end = rack_idx_start + per_lp_racks;
+		
+		// if(!systemId) LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
+		if(systemId == i){
+			NS_LOG_INFO("SystemId: " << systemId << " RackIdxStart: " << rack_idx_start << " RackIdxEnd: " << rack_idx_end);
+			for (int r = rack_idx_start; r < rack_idx_end; r++){
+				int pod_idx =  r / racks_per_pod;
+				int agg_idx = r % racks_per_pod;
+				if (agg_idx % 2){
+					// an odd rack, all hosts are clients send to sinks in the next pod
+					client(edgei[(pod_idx+1) % k][agg_idx - 1][0].GetAddress(1),edge[pod_idx][agg_idx][0].Get(1));
+					client(edgei[(pod_idx+1) % k][agg_idx - 1][1].GetAddress(1),edge[pod_idx][agg_idx][1].Get(1));
+					NS_LOG_INFO("SystemId: " << systemId << " PodIdx: " << pod_idx << " AggIdx: " << agg_idx << " Client");
+				}
+				else{
+					sink(edgei[pod_idx][agg_idx][0].GetAddress(1), edge[pod_idx][agg_idx][0].Get(1));
+					sink(edgei[pod_idx][agg_idx][1].GetAddress(1), edge[pod_idx][agg_idx][1].Get(1));
+					NS_LOG_INFO("SystemId: " << systemId << " PodIdx: " << pod_idx << " AggIdx: " << agg_idx << " Sink");
+				}
+			}
+		}
+		rack_idx_start = rack_idx_end;
+		
+	}
+	
+	/*
+	for(uint32_t i=0;i<4;i++){
+		// if(!systemId) LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
+		if(systemId==i){
+			sink(edgei[i][0][0].GetAddress(1), edge[i][0][0].Get(1));
+			client(edgei[i][0][0].GetAddress(1),edge[i][1][1].Get(1));
+			client(edgei[i][0][1].GetAddress(1),edge[i][1][1].Get(1));
+			client(edgei[i][0][0].GetAddress(1),edge[i][1][0].Get(1));
+			sink(edgei[i][0][1].GetAddress(1), edge[i][0][1].Get(1));
+			client(edgei[(i+1)%k][0][1].GetAddress(1),edge[i][1][0].Get(1));
+			client(edgei[(i+2)%k][0][1].GetAddress(1),edge[i][0][0].Get(1));
+			client(edgei[(i+3)%k][0][1].GetAddress(1),edge[i][0][1].Get(1));	
+		}
+	}
+	*/
+
+	// Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting",BooleanValue(true));
+	if (systemId == 0)
+		Simulator::Schedule(Seconds(0.0), &PrintSimProgress);
+
+	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+	
+	Simulator::Stop(Seconds(END));
+
+	Simulator::Run ();
+
+	Simulator::Destroy ();
+
+	MpiInterface::Disable();
+
+	return 0;
+} 

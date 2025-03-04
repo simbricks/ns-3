@@ -12,6 +12,7 @@ set -e
 DIR="$(dirname "$(readlink -f "$0")")"
 cd $DIR
 export LD_LIBRARY_PATH="$DIR/build/lib/:$LD_LIBRARY_PATH"
+export SIMBRICKS_PATH="/simbricks"
 
 rm -rf $DIR/build/env/*
 mkdir -p $DIR/build/env

@@ -5,6 +5,8 @@ set(base_examples
     simple-distributed-mpi-comm
     nms-p2p-nix-distributed
     simple-distributed-empty-node
+    dc_fat_mpi
+    dc_fat_sim
 )
 
 foreach(

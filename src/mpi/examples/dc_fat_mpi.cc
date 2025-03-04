@@ -16,6 +16,7 @@ Example command to execute this script
 ./ns3 run dc_fat_mpi --command-template="/usr/bin/mpiexec --allow-run-as-root -np 5 %s --num_pod=4"
 */
 
+
 #define START 0.0
 #define END 0.1
 #define NUM_STEPS 20
