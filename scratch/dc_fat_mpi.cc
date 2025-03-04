@@ -17,7 +17,7 @@ Example command to execute this script
 */
 
 #define START 0.0
-#define END 1
+#define END 0.1
 #define NUM_STEPS 20
 
 using namespace ns3;
@@ -282,9 +282,9 @@ for(uint32_t i=0;i<4;i++){
 				int agg_idx = r % racks_per_pod;
 				if (agg_idx % 2){
 					// an odd rack, all hosts are clients send to sinks in the next pod
-					// client(edgei[(pod_idx+1) % k][agg_idx - 1][0].GetAddress(1),edge[pod_idx][agg_idx][0].Get(1));
-					// client(edgei[(pod_idx+1) % k][agg_idx - 1][1].GetAddress(1),edge[pod_idx][agg_idx][1].Get(1));
-					// NS_LOG_INFO("SystemId: " << systemId << " PodIdx: " << pod_idx << " AggIdx: " << agg_idx << " Client");
+					client(edgei[(pod_idx+1) % k][agg_idx - 1][0].GetAddress(1),edge[pod_idx][agg_idx][0].Get(1));
+					client(edgei[(pod_idx+1) % k][agg_idx - 1][1].GetAddress(1),edge[pod_idx][agg_idx][1].Get(1));
+					NS_LOG_INFO("SystemId: " << systemId << " PodIdx: " << pod_idx << " AggIdx: " << agg_idx << " Client");
 				}
 				else{
 					sink(edgei[pod_idx][agg_idx][0].GetAddress(1), edge[pod_idx][agg_idx][0].Get(1));
