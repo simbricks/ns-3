@@ -110,13 +110,6 @@ int main (int argc, char *argv[])
 	int per_lp_racks = total_racks / systemCount;
 	int rack_idx_start = 0;
 	
-    // if (systemCount != (uint32_t)k+1)
-    // {
-    //     NS_LOG_INFO("current systemCount: " << systemCount);
-	// 	NS_LOG_INFO("current num_pod: " << num_pod);
-	// 	NS_LOG_INFO("logical processors should be 1 larger than num_pod");
-    //     return 1;
-    // }
 
 	// Create core switch nodes in systemId == 0
 	NodeContainer core;
@@ -253,22 +246,6 @@ int main (int argc, char *argv[])
 			}
 		}
 	}
-/*
-for(uint32_t i=0;i<4;i++){
-	// if(!systemId) LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
-	if(systemId==i){
-		sink(edgei[i][0][0].GetAddress(1), edge[i][0][0].Get(1));
-		client(edgei[i][0][0].GetAddress(1),edge[i][1][1].Get(1));
-		client(edgei[i][0][1].GetAddress(1),edge[i][1][1].Get(1));
-		client(edgei[i][0][0].GetAddress(1),edge[i][1][0].Get(1));
-		sink(edgei[i][0][1].GetAddress(1), edge[i][0][1].Get(1));
-		client(edgei[(i+1)%k][0][1].GetAddress(1),edge[i][1][0].Get(1));	
-		client(edgei[(i+2)%k][0][1].GetAddress(1),edge[i][0][0].Get(1));
-		client(edgei[(i+3)%k][0][1].GetAddress(1),edge[i][0][1].Get(1));
-	}
-}
-*/
-
 
 	
 	for(uint32_t i = 0; i < systemCount; i++){
@@ -292,14 +269,6 @@ for(uint32_t i=0;i<4;i++){
 					NS_LOG_INFO("SystemId: " << systemId << " PodIdx: " << pod_idx << " AggIdx: " << agg_idx << " Sink");
 				}
 			}
-			// sink(edgei[i][0][0].GetAddress(1), edge[i][0][0].Get(1));
-			// client(edgei[i][0][0].GetAddress(1),edge[i][1][1].Get(1));
-			// client(edgei[i][0][1].GetAddress(1),edge[i][1][1].Get(1));
-			// client(edgei[i][0][0].GetAddress(1),edge[i][1][0].Get(1));
-			// sink(edgei[i][0][1].GetAddress(1), edge[i][0][1].Get(1));
-			// client(edgei[(i+1)%k][0][1].GetAddress(1),edge[i][1][0].Get(1));	
-			// client(edgei[(i+2)%k][0][1].GetAddress(1),edge[i][0][0].Get(1));
-			// client(edgei[(i+3)%k][0][1].GetAddress(1),edge[i][0][1].Get(1));
 		}
 		rack_idx_start = rack_idx_end;
 		

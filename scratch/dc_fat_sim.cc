@@ -7,6 +7,12 @@
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/mpi-interface.h"
 
+/*
+
+Example execution command
+./fat_tree_run.sh dc_fat_sim 32
+ 
+ */
 #define START 0.0
 #define END 0.1
 #define NUM_STEPS 20
