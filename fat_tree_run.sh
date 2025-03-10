@@ -24,7 +24,7 @@ echo "START TIME: $start_time"
 
 for (( c=0; c<$2; c++ ))
 do 
-./ns3 run $1 -- $c $2 $DIR/build/env/ &
+./ns3 run $1 -- $c $2 $DIR/build/env/ $3&
 echo "Process $c with PID $! started"
 done
 

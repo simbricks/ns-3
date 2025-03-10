@@ -63,6 +63,11 @@ void PrintSimProgress(){
 	Simulator::Schedule(Seconds(step), &PrintSimProgress);
 }
 
+void PrintSinkRx(int pod, int agg, int host, ns3::Ptr<PacketSink> sink){
+	uint64_t totalRx = sink->GetTotalRx();
+	NS_LOG_INFO("Pod: " << pod << " Agg: " << agg << " Host: " << host << " TotalRx: " << totalRx);
+}
+
 int main (int argc, char *argv[])
 {
 	// LogComponentEnable("PacketSink",(LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
@@ -74,6 +79,7 @@ int main (int argc, char *argv[])
     bool testing = false;
     bool verbose = false;
 	int num_pod = 4;
+	bool internal_traffic = true;
 
     // Parse command line
     CommandLine cmd(__FILE__);
@@ -83,6 +89,7 @@ int main (int argc, char *argv[])
     cmd.AddValue("tracing", "Enable pcap tracing", tracing);
     cmd.AddValue("verbose", "verbose output", verbose);
     cmd.AddValue("test", "Enable regression test output", testing);
+	cmd.AddValue("internal_traffic", "Traffic consumed in the rack", internal_traffic);
     cmd.Parse(argc, argv);
 
     // Distributed simulation setup; by default use granted time window algorithm.
@@ -258,16 +265,25 @@ int main (int argc, char *argv[])
 			for (int r = rack_idx_start; r < rack_idx_end; r++){
 				int pod_idx =  r / racks_per_pod;
 				int agg_idx = r % racks_per_pod;
-				if (agg_idx % 2){
-					// an odd rack, all hosts are clients send to sinks in the next pod
-					client(edgei[(pod_idx+1) % k][agg_idx - 1][0].GetAddress(1),edge[pod_idx][agg_idx][0].Get(1));
-					client(edgei[(pod_idx+1) % k][agg_idx - 1][1].GetAddress(1),edge[pod_idx][agg_idx][1].Get(1));
-					NS_LOG_INFO("SystemId: " << systemId << " PodIdx: " << pod_idx << " AggIdx: " << agg_idx << " Client");
+				if (internal_traffic){
+					// the first host in rack as the sink and the rest of it as clients 
+					sink(edgei[pod_idx][agg_idx][0].GetAddress(1), edge[pod_idx][agg_idx][0].Get(1));
+					Simulator::Schedule(Seconds(END), &PrintSinkRx, pod_idx, agg_idx, 0, DynamicCast<PacketSink>(edge[pod_idx][agg_idx][0].Get(1)->GetApplication(0)));
+
+					for (int c = 1; c < k/2; c++){
+						client(edgei[pod_idx][agg_idx][0].GetAddress(1), edge[pod_idx][agg_idx][c].Get(1));
+					}
 				}
 				else{
-					sink(edgei[pod_idx][agg_idx][0].GetAddress(1), edge[pod_idx][agg_idx][0].Get(1));
-					sink(edgei[pod_idx][agg_idx][1].GetAddress(1), edge[pod_idx][agg_idx][1].Get(1));
-					NS_LOG_INFO("SystemId: " << systemId << " PodIdx: " << pod_idx << " AggIdx: " << agg_idx << " Sink");
+					if (agg_idx % 2){
+						// an odd rack, all hosts are clients send to sinks in the next pod
+						client(edgei[(pod_idx+1) % k][agg_idx - 1][0].GetAddress(1),edge[pod_idx][agg_idx][0].Get(1));
+						client(edgei[(pod_idx+1) % k][agg_idx - 1][1].GetAddress(1),edge[pod_idx][agg_idx][1].Get(1));
+					}
+					else{
+						sink(edgei[pod_idx][agg_idx][0].GetAddress(1), edge[pod_idx][agg_idx][0].Get(1));
+						sink(edgei[pod_idx][agg_idx][1].GetAddress(1), edge[pod_idx][agg_idx][1].Get(1));
+					}
 				}
 			}
 		}
