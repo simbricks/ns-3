@@ -49,7 +49,7 @@ void client(ns3::Ipv4Address add, ns3::Ptr<Node> node){
 	client.SetAttribute ("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1000000000000]"));
 	client.SetAttribute ("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
 	client.SetAttribute ("DataRate", DataRateValue (DataRate ("1000Mbps")));
-	client.SetAttribute ("PacketSize", UintegerValue (200));
+	client.SetAttribute ("PacketSize", UintegerValue (400));
 	
 	ApplicationContainer clientApp = client.Install (node);
 	clientApp.Start(Seconds (START));
@@ -267,11 +267,12 @@ int main (int argc, char *argv[])
 				int agg_idx = r % racks_per_pod;
 				if (internal_traffic){
 					// the first host in rack as the sink and the rest of it as clients 
-					sink(edgei[pod_idx][agg_idx][0].GetAddress(1), edge[pod_idx][agg_idx][0].Get(1));
-					Simulator::Schedule(Seconds(END), &PrintSinkRx, pod_idx, agg_idx, 0, DynamicCast<PacketSink>(edge[pod_idx][agg_idx][0].Get(1)->GetApplication(0)));
+					sink(edgei[pod_idx][agg_idx][0].GetAddress(0), edge[pod_idx][agg_idx][0].Get(0));
+					Simulator::Schedule(Seconds(END), &PrintSinkRx, pod_idx, agg_idx, 0, DynamicCast<PacketSink>(edge[pod_idx][agg_idx][0].Get(0)->GetApplication(0)));
+					NS_LOG_INFO("Sink at: " << edgei[pod_idx][agg_idx][0].GetAddress(1));
 
 					for (int c = 1; c < k/2; c++){
-						client(edgei[pod_idx][agg_idx][0].GetAddress(1), edge[pod_idx][agg_idx][c].Get(1));
+						client(edgei[pod_idx][agg_idx][0].GetAddress(0), edge[pod_idx][agg_idx][c].Get(0));
 					}
 				}
 				else{
@@ -293,8 +294,11 @@ int main (int argc, char *argv[])
 	
 
 	// Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting",BooleanValue(true));
-	if (systemId == 0)
+	if (systemId == 0){
 		Simulator::Schedule(Seconds(0.0), &PrintSimProgress);
+		// LogComponentEnable("PacketSink",(LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+
+	}
 
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Simulator::Stop(Seconds(END));
