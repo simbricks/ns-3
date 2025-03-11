@@ -48,8 +48,8 @@ void client(ns3::Ipv4Address add, ns3::Ptr<Node> node){
 	OnOffHelper client("ns3::TcpSocketFactory", InetSocketAddress(add, 8080));
 	client.SetAttribute ("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1000000000000]"));
 	client.SetAttribute ("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-	client.SetAttribute ("DataRate", DataRateValue (DataRate ("1000Mbps")));
-	client.SetAttribute ("PacketSize", UintegerValue (400));
+	client.SetAttribute ("DataRate", DataRateValue (DataRate ("50000Mbps")));
+	client.SetAttribute ("PacketSize", UintegerValue (60)); 
 	
 	ApplicationContainer clientApp = client.Install (node);
 	clientApp.Start(Seconds (START));
