@@ -39,3 +39,14 @@ build_lib_example(
     ${libcsma}
     ${libapplications}
 )
+
+build_lib_example(
+  NAME fct_fat
+  SOURCE_FILES fct_fat.cc
+  LIBRARIES_TO_LINK ${libsimbricks}
+                    ${libbridge}
+                    ${libpoint-to-point}
+                    ${libinternet}
+                    ${libred}
+                    ${libapplications}
+)
