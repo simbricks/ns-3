@@ -64,13 +64,44 @@ ip_to_node_id(Ipv4Address ip)
 void
 log_fct(Ptr<Packet const> packet, const Address& address)
 {
-    int id = ip_to_node_id(Ipv4Address::ConvertFrom(address));
-    NS_LOG_INFO("Received packet from node " << id);
-    received_bytes[id] += packet->GetSize();
-    if (received_bytes[id] >= 2 * 1000000)
+    received_bytes[0] += packet->GetSize();
+    if (received_bytes[0] >= 2 * 1000000)
     {
-        NS_LOG_INFO("Node " << id << " Completed receiving at "
+        NS_LOG_INFO("Node " << 0 << " Completed receiving at "
                             << Simulator::Now().GetMicroSeconds() << " usec");
+    }
+}
+
+void PrintAllNetDeviceIPs() {
+    NS_LOG_INFO("Iterating through all nodes and their NetDevices to print IP addresses:");
+
+    // Iterate over all nodes
+    for (uint32_t nodeId = 0; nodeId < NodeList::GetNNodes(); ++nodeId) {
+        Ptr<Node> node = NodeList::GetNode(nodeId);
+        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+        if (!ipv4) {
+            NS_LOG_WARN("Node " << nodeId << " does not have an Ipv4 object.");
+            continue;
+        }
+
+        NS_LOG_INFO("Node " << nodeId << " has " << node->GetNDevices() << " NetDevices:");
+
+        // Iterate over all NetDevices in the node
+        for (uint32_t devId = 0; devId < node->GetNDevices(); ++devId) {
+            Ptr<NetDevice> device = node->GetDevice(devId);
+
+            // Find the interface index for this NetDevice
+            int32_t interfaceIndex = ipv4->GetInterfaceForDevice(device);
+            if (interfaceIndex >= 0) {
+                // Get the primary IP address of the interface
+                Ipv4Address ipAddress = ipv4->GetAddress(interfaceIndex, 0).GetLocal();
+                NS_LOG_INFO("  Device " << devId << ": " << device->GetInstanceTypeId()
+                                        << " IP Address: " << ipAddress);
+            } else {
+                NS_LOG_INFO("  Device " << devId << ": " << device->GetInstanceTypeId()
+                                        << " has no IP address.");
+            }
+        }
     }
 }
 
@@ -103,14 +134,18 @@ client(ns3::Ipv4Address add, ns3::Ptr<Node> node)
 int
 main(int argc, char* argv[])
 {
-    LogComponentEnable("PacketSink",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
-    LogComponentEnable("OnOffApplication",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
-    // LogComponentEnable("Ipv4GlobalRouting", LOG_LEVEL_ALL);
+    // LogComponentEnable("PacketSink",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+    // LogComponentEnable("OnOffApplication",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+    // LogComponentEnable("Ipv4GlobalRouting", (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+    // LogComponentEnable("SimpleNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+    // LogComponentEnable("BridgeNetDevice", (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+    // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_INFO);
+    // LogComponentEnable("Queue", LOG_LEVEL_INFO);
+    LogComponentEnable("FCT_FatTree_Example",
+                       (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
 
     Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting", BooleanValue(true));
     Time::SetResolution(Time::Unit::PS);
-    LogComponentEnable("FCT_FatTree_Example",
-                       (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
 
     Time linkLatency(NanoSeconds(500));
     DataRate linkRate("10Gb/s");
@@ -188,7 +223,7 @@ main(int argc, char* argv[])
     Ipv4InterfaceContainer spine_agg_ip[num_spine_sw][num_pod];
 
     SimpleNetDeviceHelper simp_netdev;
-    simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5kB")));
+    simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
     simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
     simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
     
@@ -296,14 +331,16 @@ main(int argc, char* argv[])
         Create<OutputStreamWrapper>("dynamic-global-routing.routes", std::ios::out), Time::S);
 
     // Install sink and client applications
-    NS_LOG_INFO(tord_op_ip[0][0].GetAddress(1));
+    NS_LOG_INFO("Sink info");
+    NS_LOG_INFO(tord_op_ip[0][0].GetAddress(2));
+    NS_LOG_INFO(tor_host[0][0][0].Get(1)->GetId());
     sink(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][0].Get(1));
     client(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][1].Get(1));
     client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1));
     client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1));
 
-
-
+    // Print all NetDevices and their IP addresses
+    PrintAllNetDeviceIPs();
 
 
 
