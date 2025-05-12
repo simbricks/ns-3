@@ -11,14 +11,14 @@
 #include "ns3/simple-net-device.h"
 
 #define START 0.0
-#define END 1
+#define END 0.5
 #define NUM_STEPS 20
 
 using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("FCT_FatTree_Example");
 
 std::vector<std::string> simbricksPortPaths;
-std::vector<int> received_bytes;
+std::map<Ipv4Address, int> received_bytes; // Map source IP to received bytes
 int flow_size = 2; // in MB
 
 void inc_address_base(char* array, int &sub){
@@ -61,20 +61,10 @@ ip_to_node_id(Ipv4Address ip)
     return (ip.Get() >> 8) & 0xffff;
 }
 
-void
-log_fct(Ptr<Packet const> packet, const Address& address)
-{
-    received_bytes[0] += packet->GetSize();
-    if (received_bytes[0] >= 2 * 1000000)
-    {
-        NS_LOG_INFO("Node " << 0 << " Completed receiving at "
-                            << Simulator::Now().GetMicroSeconds() << " usec");
-    }
-}
 
 void PrintAllNetDeviceIPs() {
     NS_LOG_INFO("Iterating through all nodes and their NetDevices to print IP addresses:");
-
+    
     // Iterate over all nodes
     for (uint32_t nodeId = 0; nodeId < NodeList::GetNNodes(); ++nodeId) {
         Ptr<Node> node = NodeList::GetNode(nodeId);
@@ -83,25 +73,41 @@ void PrintAllNetDeviceIPs() {
             NS_LOG_WARN("Node " << nodeId << " does not have an Ipv4 object.");
             continue;
         }
-
+        
         NS_LOG_INFO("Node " << nodeId << " has " << node->GetNDevices() << " NetDevices:");
-
+        
         // Iterate over all NetDevices in the node
         for (uint32_t devId = 0; devId < node->GetNDevices(); ++devId) {
             Ptr<NetDevice> device = node->GetDevice(devId);
-
+            
             // Find the interface index for this NetDevice
             int32_t interfaceIndex = ipv4->GetInterfaceForDevice(device);
             if (interfaceIndex >= 0) {
                 // Get the primary IP address of the interface
                 Ipv4Address ipAddress = ipv4->GetAddress(interfaceIndex, 0).GetLocal();
                 NS_LOG_INFO("  Device " << devId << ": " << device->GetInstanceTypeId()
-                                        << " IP Address: " << ipAddress);
+                << " IP Address: " << ipAddress);
             } else {
                 NS_LOG_INFO("  Device " << devId << ": " << device->GetInstanceTypeId()
-                                        << " has no IP address.");
+                << " has no IP address.");
             }
         }
+    }
+}
+
+void
+log_fct(Ptr<Packet const> packet, const Address& address)
+{
+    // Extract the source IP address from the packet
+    Ipv4Address sourceIp = InetSocketAddress::ConvertFrom(address).GetIpv4();
+
+    // Increment the received bytes for the source IP
+    received_bytes[sourceIp] += packet->GetSize();
+    if (received_bytes[sourceIp] >= 2 * 1000000)
+    {
+        NS_LOG_INFO("Sink " << " Completed receiving at "
+                            << Simulator::Now().GetMicroSeconds() << " usec");
+        
     }
 }
 
@@ -110,20 +116,22 @@ sink(ns3::Ipv4Address add, ns3::Ptr<Node> node)
 {
     PacketSinkHelper packetSinkHelper("ns3::TcpSocketFactory", InetSocketAddress(add, 8080));
     ApplicationContainer sinkApp = packetSinkHelper.Install(node);
-
+    
     sinkApp.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&log_fct));
     sinkApp.Start(Seconds(START));
     sinkApp.Stop(Seconds(END));
 }
 
 void
-client(ns3::Ipv4Address add, ns3::Ptr<Node> node)
+client(ns3::Ipv4Address add, ns3::Ptr<Node> node, int flow_size)
 {
     OnOffHelper client("ns3::TcpSocketFactory", InetSocketAddress(add, 8080));
     client.SetAttribute("OnTime",
                         StringValue("ns3::ConstantRandomVariable[Constant=1000000000000]"));
     client.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
     client.SetAttribute("DataRate", DataRateValue(DataRate("5000Mbps")));
+    client.SetAttribute("MaxBytes", UintegerValue(flow_size * 1000000));
+
     client.SetAttribute("PacketSize", UintegerValue(1500));
 
     ApplicationContainer clientApp = client.Install(node);
@@ -152,6 +160,7 @@ main(int argc, char* argv[])
     double ecnTh = 200000;
     int k_value = 4;
     float detail_host_percent = 0.1;
+    int flow_size = 2; // in MB
 
     // int n_spine_sw = 1;
     // int n_agg_bl = 2;
@@ -181,7 +190,7 @@ main(int argc, char* argv[])
     int total_hosts = k_value * k_value * k_value / 4;
     int num_detail_hosts = std::ceil(total_hosts * detail_host_percent);
     int num_dum_hosts = total_hosts - num_detail_hosts;
-    received_bytes.resize(num_dum_hosts, 0);
+    // received_bytes.resize(num_dum_hosts, 0);
 
     NS_LOG_INFO("kvalue: " << k_value);
     NS_LOG_INFO("detail_host_percent: " << detail_host_percent);
@@ -327,20 +336,20 @@ main(int argc, char* argv[])
     }
     
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
-    Ipv4GlobalRoutingHelper::PrintRoutingTableAllAt(Seconds(0.1),
-        Create<OutputStreamWrapper>("dynamic-global-routing.routes", std::ios::out), Time::S);
+    // Ipv4GlobalRoutingHelper::PrintRoutingTableAllAt(Seconds(0.1),
+    //     Create<OutputStreamWrapper>("dynamic-global-routing.routes", std::ios::out), Time::S);
 
     // Install sink and client applications
     NS_LOG_INFO("Sink info");
     NS_LOG_INFO(tord_op_ip[0][0].GetAddress(2));
     NS_LOG_INFO(tor_host[0][0][0].Get(1)->GetId());
     sink(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][0].Get(1));
-    client(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][1].Get(1));
-    client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1));
-    client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1));
+    client(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][1].Get(1), flow_size);
+    client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1), flow_size);
+    client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
 
     // Print all NetDevices and their IP addresses
-    PrintAllNetDeviceIPs();
+    // PrintAllNetDeviceIPs();
 
 
 
