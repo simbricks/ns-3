@@ -146,11 +146,17 @@ main(int argc, char* argv[])
     // LogComponentEnable("OnOffApplication",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("Ipv4GlobalRouting", (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("SimpleNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
-    // LogComponentEnable("BridgeNetDevice", (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+    LogComponentEnable("BridgeNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_INFO);
     // LogComponentEnable("Queue", LOG_LEVEL_INFO);
     LogComponentEnable("FCT_FatTree_Example",
                        (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+
+    LogComponentEnable("SimbricksNetDevice", LOG_LEVEL_ALL);
+    LogComponentEnable("BridgeHelper", LOG_LEVEL_ALL);
+    LogComponentEnable("InternetStackHelper", LOG_LEVEL_ALL);
+    
+
 
     Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting", BooleanValue(true));
     Time::SetResolution(Time::Unit::PS);
@@ -188,7 +194,18 @@ main(int argc, char* argv[])
     cmd.Parse(argc, argv);
 
     int total_hosts = k_value * k_value * k_value / 4;
-    int num_detail_hosts = std::ceil(total_hosts * detail_host_percent);
+    int num_detail_hosts = std::round(total_hosts * detail_host_percent);
+    if (num_detail_hosts == 0)
+    {
+        num_detail_hosts = 2;
+    }
+    else if (num_detail_hosts % 2 != 0)
+    {
+        num_detail_hosts += 1;
+    }
+    int starting_host_idx = total_hosts - num_detail_hosts;
+    int last_host_idx = total_hosts - 1;
+
     int num_dum_hosts = total_hosts - num_detail_hosts;
     // received_bytes.resize(num_dum_hosts, 0);
 
@@ -274,10 +291,30 @@ main(int argc, char* argv[])
         for (int j = 0; j < racks_per_pod; j++){
             for (int k = 0; k < num_hosts_per_rack; k++){
                 tor_host[i][j][k].Add(pod_sw[i][1].Get(j)); // ToR switch node
-                tor_host[i][j][k].Create(1); // Host node
-                tor_hostd[i][j][k] = simp_netdev.Install(tor_host[i][j][k]);
-                tord[i][j].Add(tor_hostd[i][j][k].Get(0));
-                tord_op[i][j].Add(tor_hostd[i][j][k].Get(1));
+
+                int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
+                // NS_LOG_INFO("Host " << host_idx << " connected to pod " << i << " rack " << j << " host " << k);
+                if (host_idx < starting_host_idx){
+                    // Dummy host
+                    tor_host[i][j][k].Create(1); // Host node
+                    tor_hostd[i][j][k] = simp_netdev.Install(tor_host[i][j][k]);
+                    tord[i][j].Add(tor_hostd[i][j][k].Get(0));
+                    tord_op[i][j].Add(tor_hostd[i][j][k].Get(1));
+                }
+                else{
+                    // Detailed host
+                    int detail_host_idx = host_idx - starting_host_idx;
+                    Ptr<simbricks::SimbricksNetDevice> device = CreateObject<simbricks::SimbricksNetDevice> ();
+                    if (!device)
+                    {
+                        NS_LOG_INFO("Failed to create SimbricksNetDevice");
+                        return 1;
+                    }
+                    std::string& cpp = simbricksPortPaths[detail_host_idx];
+                    device->SetAttribute("UnixSocket", StringValue(cpp));
+                    device->Start();
+                    tord[i][j].Add(device);
+                }
             }
         }
     }
@@ -290,23 +327,30 @@ main(int argc, char* argv[])
         }
     }
 
-
     /************************************************************************/
     // Done with topology creation. Now set the software stack and App
-
+    
     // Install IP stack to all nodes except Tor switches
     InternetStackHelper ip_stack;
     ip_stack.Install(spine);
     for (int i = 0; i < num_pod; i++){
         ip_stack.Install(pod_sw[i][0]);
     }
+    
+        NS_LOG_INFO("1: Break Point!!\n\n");
+
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
             for (int k = 0; k < num_hosts_per_rack; k++){
-                ip_stack.Install(tor_host[i][j][k].Get(1));
+                
+                int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
+                if (host_idx < starting_host_idx){
+                    ip_stack.Install(tor_host[i][j][k].Get(1));
+                }
             }
         }
     }
+    NS_LOG_INFO("2: Break Point!!\n\n");
 
 	Ipv4AddressHelper ipv4;
 	int sub = 0;
@@ -324,6 +368,7 @@ main(int argc, char* argv[])
             ipv4.SetBase(ip_base, "255.255.255.0");
         }
     }
+    NS_LOG_INFO("3: Break Point!!\n\n");
 
     // Assign IP addresses to all spine-agg links
     // NS_LOG_INFO("IP base for spine-agg devs: " << ip_base);
@@ -335,18 +380,31 @@ main(int argc, char* argv[])
         }
     }
     
+    NS_LOG_INFO("4: Break Point!!\n\n");
+
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+    
+    NS_LOG_INFO("5: Break Point!!\n\n");
+
     // Ipv4GlobalRoutingHelper::PrintRoutingTableAllAt(Seconds(0.1),
     //     Create<OutputStreamWrapper>("dynamic-global-routing.routes", std::ios::out), Time::S);
 
     // Install sink and client applications
-    NS_LOG_INFO("Sink info");
-    NS_LOG_INFO(tord_op_ip[0][0].GetAddress(2));
-    NS_LOG_INFO(tor_host[0][0][0].Get(1)->GetId());
+    // in tord_op_ip[i][j], the host IPs start from GetAddress(num_agg_sw)
+    // in tor_host[i][j][k], the host Node is Get(1) 
+
+    // NS_LOG_INFO("Sink info");
+    // NS_LOG_INFO(tord_op_ip[0][0].GetAddress(2));
+    // NS_LOG_INFO(tor_host[0][0][0].Get(1)->GetId());
+
     sink(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][0].Get(1));
     client(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][1].Get(1), flow_size);
-    client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1), flow_size);
-    client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
+    // client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1), flow_size);
+    // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
+
+    for (int i = 0; i < num_dum_hosts; i++){
+        
+    }
 
     // Print all NetDevices and their IP addresses
     // PrintAllNetDeviceIPs();
