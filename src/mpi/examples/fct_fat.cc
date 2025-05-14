@@ -1,3 +1,7 @@
+#include <sstream>
+#include <iomanip>
+#include <string>
+
 #include "ns3/applications-module.h"
 #include "ns3/bridge-module.h"
 #include "ns3/bridge-net-device.h"
@@ -11,7 +15,7 @@
 #include "ns3/simple-net-device.h"
 
 #define START 0.0
-#define END 2
+#define END 5
 #define NUM_STEPS 20
 
 using namespace ns3;
@@ -147,12 +151,12 @@ main(int argc, char* argv[])
     // LogComponentEnable("Ipv4GlobalRouting", (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("SimpleNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("BridgeNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
-    // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_INFO);
+    LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_INFO);
     // LogComponentEnable("Queue", LOG_LEVEL_INFO);
     LogComponentEnable("FCT_FatTree_Example",
                        (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
 
-    // LogComponentEnable("SimbricksNetDevice", LOG_LEVEL_ALL);
+    LogComponentEnable("SimbricksNetDevice", LOG_LEVEL_ALL);
     // LogComponentEnable("BridgeHelper", LOG_LEVEL_ALL);
     // LogComponentEnable("GlobalRoutingHelper", LOG_LEVEL_ALL);
     
@@ -424,6 +428,10 @@ main(int argc, char* argv[])
                 else{
                     // Detailed host
                     int detail_host_idx = host_idx - starting_host_idx;
+                    std::ostringstream mac_stream;
+                    mac_stream << "00:90:00:00:00:" << std::setw(2) << std::setfill('0') << std::hex << host_idx;
+                    std::string mac_addr = mac_stream.str();
+                    Mac48Address mac(mac_addr.c_str());
                     Ptr<simbricks::SimbricksNetDevice> device = CreateObject<simbricks::SimbricksNetDevice> ();
                     if (!device)
                     {
@@ -432,6 +440,8 @@ main(int argc, char* argv[])
                     }
                     std::string& cpp = simbricksPortPaths[detail_host_idx];
                     device->SetAttribute("UnixSocket", StringValue(cpp));
+                    device->SetAddress(mac);
+                    NS_LOG_INFO("MAC = " << device->GetAddress() );
                     node->AddDevice(device);
                     bridge->AddBridgePort(device);
                     device->Start();
@@ -452,6 +462,7 @@ main(int argc, char* argv[])
     // NS_LOG_INFO("Sink info");
     // NS_LOG_INFO(tord_op_ip[0][0].GetAddress(2));
     // NS_LOG_INFO(tor_host[0][0][0].Get(1)->GetId());
+    simp_netdev.EnablePcap("fat_tree_tor", tord[3][1].Get(7), true);
 
     sink(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][0].Get(1));
     client(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][1].Get(1), flow_size);
