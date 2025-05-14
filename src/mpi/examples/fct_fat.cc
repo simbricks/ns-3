@@ -11,7 +11,7 @@
 #include "ns3/simple-net-device.h"
 
 #define START 0.0
-#define END 0.5
+#define END 2
 #define NUM_STEPS 20
 
 using namespace ns3;
@@ -432,6 +432,7 @@ main(int argc, char* argv[])
                     }
                     std::string& cpp = simbricksPortPaths[detail_host_idx];
                     device->SetAttribute("UnixSocket", StringValue(cpp));
+                    node->AddDevice(device);
                     bridge->AddBridgePort(device);
                     device->Start();
                     tord[i][j].Add(device);
