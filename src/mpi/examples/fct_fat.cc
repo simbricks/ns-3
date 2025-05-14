@@ -146,15 +146,15 @@ main(int argc, char* argv[])
     // LogComponentEnable("OnOffApplication",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("Ipv4GlobalRouting", (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("SimpleNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
-    LogComponentEnable("BridgeNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
+    // LogComponentEnable("BridgeNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_INFO);
     // LogComponentEnable("Queue", LOG_LEVEL_INFO);
     LogComponentEnable("FCT_FatTree_Example",
                        (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
 
-    LogComponentEnable("SimbricksNetDevice", LOG_LEVEL_ALL);
-    LogComponentEnable("BridgeHelper", LOG_LEVEL_ALL);
-    LogComponentEnable("InternetStackHelper", LOG_LEVEL_ALL);
+    // LogComponentEnable("SimbricksNetDevice", LOG_LEVEL_ALL);
+    // LogComponentEnable("BridgeHelper", LOG_LEVEL_ALL);
+    // LogComponentEnable("GlobalRoutingHelper", LOG_LEVEL_ALL);
     
 
 
@@ -303,17 +303,17 @@ main(int argc, char* argv[])
                 }
                 else{
                     // Detailed host
-                    int detail_host_idx = host_idx - starting_host_idx;
-                    Ptr<simbricks::SimbricksNetDevice> device = CreateObject<simbricks::SimbricksNetDevice> ();
-                    if (!device)
-                    {
-                        NS_LOG_INFO("Failed to create SimbricksNetDevice");
-                        return 1;
-                    }
-                    std::string& cpp = simbricksPortPaths[detail_host_idx];
-                    device->SetAttribute("UnixSocket", StringValue(cpp));
-                    device->Start();
-                    tord[i][j].Add(device);
+                    // int detail_host_idx = host_idx - starting_host_idx;
+                    // Ptr<simbricks::SimbricksNetDevice> device = CreateObject<simbricks::SimbricksNetDevice> ();
+                    // if (!device)
+                    // {
+                    //     NS_LOG_INFO("Failed to create SimbricksNetDevice");
+                    //     return 1;
+                    // }
+                    // std::string& cpp = simbricksPortPaths[detail_host_idx];
+                    // device->SetAttribute("UnixSocket", StringValue(cpp));
+                    // device->Start();
+                    // tord[i][j].Add(device);
                 }
             }
         }
@@ -386,6 +386,61 @@ main(int argc, char* argv[])
     
     NS_LOG_INFO("5: Break Point!!\n\n");
 
+    for (int i = 0; i < num_pod; i++){
+        for (int j = 0; j < racks_per_pod; j++){
+
+            Ptr<Node> node = pod_sw[i][1].Get(j);
+            Ptr<BridgeNetDevice> bridge;
+            if (node) {
+                NS_LOG_INFO("Node ID: " << node->GetId());
+                for (uint32_t i = 0; i < node->GetNDevices(); ++i) {
+                    NS_LOG_INFO("Device " << i << ": " << node->GetDevice(i)->GetInstanceTypeId());
+                    if (node->GetDevice(i)->IsBridge()) {
+                        NS_LOG_INFO("Device " << i << " is a BridgeNetDevice");
+                        bridge = DynamicCast<BridgeNetDevice>(node->GetDevice(i));
+
+                    }
+                }
+            }
+
+            if (bridge)
+            {
+                NS_LOG_INFO("Device Type: " << bridge->GetInstanceTypeId());
+            }
+            else{
+                NS_LOG_WARN("No device found at the specified index.");
+
+            }
+
+
+            for (int k = 0; k < num_hosts_per_rack; k++){
+
+                int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
+                // NS_LOG_INFO("Host " << host_idx << " connected to pod " << i << " rack " << j << " host " << k);
+                if (host_idx < starting_host_idx){
+                    // Dummy host
+
+                }
+                else{
+                    // Detailed host
+                    int detail_host_idx = host_idx - starting_host_idx;
+                    Ptr<simbricks::SimbricksNetDevice> device = CreateObject<simbricks::SimbricksNetDevice> ();
+                    if (!device)
+                    {
+                        NS_LOG_INFO("Failed to create SimbricksNetDevice");
+                        return 1;
+                    }
+                    std::string& cpp = simbricksPortPaths[detail_host_idx];
+                    device->SetAttribute("UnixSocket", StringValue(cpp));
+                    bridge->AddBridgePort(device);
+                    device->Start();
+                    tord[i][j].Add(device);
+                }
+            }
+        }
+    }
+
+
     // Ipv4GlobalRoutingHelper::PrintRoutingTableAllAt(Seconds(0.1),
     //     Create<OutputStreamWrapper>("dynamic-global-routing.routes", std::ios::out), Time::S);
 
@@ -401,10 +456,6 @@ main(int argc, char* argv[])
     client(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][1].Get(1), flow_size);
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1), flow_size);
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
-
-    for (int i = 0; i < num_dum_hosts; i++){
-        
-    }
 
     // Print all NetDevices and their IP addresses
     // PrintAllNetDeviceIPs();
