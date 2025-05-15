@@ -138,11 +138,12 @@ log_fct(Ptr<Packet const> packet, const Address& address)
 
     // Increment the received bytes for the source IP
     received_bytes[sourceIp] += packet->GetSize();
-    Time curTime = Simulator::Now().GetMicroSeconds();
+    uint64_t start_time = (HEAD_ROOM) * 1000000;
+
     if (received_bytes[sourceIp] >= flow_size * 1024 * 1024)
     {
         NS_LOG_INFO("Sink " << " Completed receiving " << received_bytes[sourceIp] << " Bytes at "
-                            << curTime << " usec" << "FCT: " << curTime - (START - HEAD_ROOM) * 1000000 << " usec");
+                            << Simulator::Now().GetMicroSeconds() << " usec" << " FCT: " << Simulator::Now().GetMicroSeconds() - start_time << " usec");
         
     }
 }
@@ -178,8 +179,6 @@ client(ns3::Ipv4Address add, ns3::Ptr<Node> node, int flow_size)
 int
 main(int argc, char* argv[])
 {
-    std::ofstream logFile("fct.out");
-    std::clog.rdbuf(logFile.rdbuf());
 
     // LogComponentEnable("PacketSink",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("OnOffApplication",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
@@ -230,6 +229,13 @@ main(int argc, char* argv[])
     cmd.AddValue("detail_host_percent", "Detail host percent in fat tree", detail_host_percent);
 
     cmd.Parse(argc, argv);
+    
+    std::ostringstream out_name_stream;
+    out_name_stream << "fct_" << k_value << "_" << detail_host_percent << ".out";
+    std::string out_name = out_name_stream.str();
+
+    std::ofstream logFile(out_name.c_str());
+    std::clog.rdbuf(logFile.rdbuf());
 
     int total_hosts = k_value * k_value * k_value / 4;
     int num_detail_hosts = std::round(total_hosts * detail_host_percent);
