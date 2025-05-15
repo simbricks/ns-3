@@ -13,6 +13,8 @@
 #include "ns3/simbricks-netdev.h"
 #include "ns3/simple-channel.h"
 #include "ns3/simple-net-device.h"
+#include "ns3/pcap-file-wrapper.h"
+#include "ns3/trace-helper.h"
 
 #define START 0.0
 #define END 5
@@ -107,7 +109,7 @@ log_fct(Ptr<Packet const> packet, const Address& address)
 
     // Increment the received bytes for the source IP
     received_bytes[sourceIp] += packet->GetSize();
-    if (received_bytes[sourceIp] >= 2 * 1000000)
+    if (received_bytes[sourceIp] >= flow_size * 1000000)
     {
         NS_LOG_INFO("Sink " << " Completed receiving at "
                             << Simulator::Now().GetMicroSeconds() << " usec");
@@ -151,7 +153,7 @@ main(int argc, char* argv[])
     // LogComponentEnable("Ipv4GlobalRouting", (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("SimpleNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("BridgeNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
-    LogComponentEnable("Ipv4L3Protocol", LOG_LEVEL_INFO);
+    // LogComponentEnable("CsmaNetDevice", LOG_LEVEL_INFO);
     // LogComponentEnable("Queue", LOG_LEVEL_INFO);
     LogComponentEnable("FCT_FatTree_Example",
                        (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
@@ -170,7 +172,6 @@ main(int argc, char* argv[])
     double ecnTh = 200000;
     int k_value = 4;
     float detail_host_percent = 0.1;
-    int flow_size = 2; // in MB
 
     // int n_spine_sw = 1;
     // int n_agg_bl = 2;
@@ -252,10 +253,10 @@ main(int argc, char* argv[])
     Ipv4InterfaceContainer tord_op_ip[num_pod][racks_per_pod];
     Ipv4InterfaceContainer spine_agg_ip[num_spine_sw][num_pod];
 
-    SimpleNetDeviceHelper simp_netdev;
-    simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
-    simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
-    simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
+    CsmaHelper simp_netdev;
+    // simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
+    // simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
+    // simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
     
     // Create Spine Nodes
     spine.Create(num_spine_sw);
@@ -390,6 +391,7 @@ main(int argc, char* argv[])
     
     NS_LOG_INFO("5: Break Point!!\n\n");
 
+
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
 
@@ -403,6 +405,9 @@ main(int argc, char* argv[])
                         NS_LOG_INFO("Device " << i << " is a BridgeNetDevice");
                         bridge = DynamicCast<BridgeNetDevice>(node->GetDevice(i));
 
+                    }
+                    else{
+                        NS_LOG_INFO("MAC addr of " << i << " th device: "<< node->GetDevice(i)->GetAddress() );
                     }
                 }
             }
@@ -450,7 +455,8 @@ main(int argc, char* argv[])
             }
         }
     }
-
+    simp_netdev.EnablePcapAll("fat_tree");
+    
 
     // Ipv4GlobalRoutingHelper::PrintRoutingTableAllAt(Seconds(0.1),
     //     Create<OutputStreamWrapper>("dynamic-global-routing.routes", std::ios::out), Time::S);
@@ -462,18 +468,20 @@ main(int argc, char* argv[])
     // NS_LOG_INFO("Sink info");
     // NS_LOG_INFO(tord_op_ip[0][0].GetAddress(2));
     // NS_LOG_INFO(tor_host[0][0][0].Get(1)->GetId());
-    simp_netdev.EnablePcap("fat_tree_tor", tord[3][1].Get(7), true);
 
-    sink(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][0].Get(1));
-    client(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][1].Get(1), flow_size);
+    // sink(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][0].Get(1));
+    // client(tord_op_ip[0][0].GetAddress(2), tor_host[0][0][1].Get(1), flow_size);
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1), flow_size);
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
+    
+    sink(tord_op_ip[3][0].GetAddress(2), tor_host[3][0][0].Get(1));
+    client(tord_op_ip[3][0].GetAddress(2), tor_host[3][1][0].Get(1), flow_size);
 
     // Print all NetDevices and their IP addresses
     // PrintAllNetDeviceIPs();
 
 
-
+    GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
     Simulator::Schedule(Seconds(0.0), &PrintSimProgress);
     Simulator::Stop(Seconds(END));
 

@@ -49,4 +49,5 @@ build_lib_example(
                     ${libinternet}
                     ${libred}
                     ${libapplications}
+                    ${libcsma}
 )
