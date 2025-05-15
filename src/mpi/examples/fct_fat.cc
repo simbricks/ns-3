@@ -399,7 +399,7 @@ main(int argc, char* argv[])
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
             int num_dum_hosts = num_hosts_per_rack -  detailHostPairs[i * racks_per_pod + j].num_detail_ser - detailHostPairs[i * racks_per_pod + j].num_detail_cli;
-            NS_LOG_INFO("Rack " << i * racks_per_pod + j << " has " << num_dum_hosts << " dummy hosts");
+            // NS_LOG_INFO("Rack " << i * racks_per_pod + j << " has " << num_dum_hosts << " dummy hosts");
 
             for (int k = 0; k < num_dum_hosts; k++){
                 ip_stack.Install(tor_host[i][j][k].Get(1));
@@ -455,14 +455,14 @@ main(int argc, char* argv[])
             if (node) {
                 NS_LOG_INFO("Node ID: " << node->GetId());
                 for (uint32_t i = 0; i < node->GetNDevices(); ++i) {
-                    NS_LOG_INFO("Device " << i << ": " << node->GetDevice(i)->GetInstanceTypeId());
+                    // NS_LOG_INFO("Device " << i << ": " << node->GetDevice(i)->GetInstanceTypeId());
                     if (node->GetDevice(i)->IsBridge()) {
                         NS_LOG_INFO("Device " << i << " is a BridgeNetDevice");
                         bridge = DynamicCast<BridgeNetDevice>(node->GetDevice(i));
 
                     }
                     else{
-                        NS_LOG_INFO("MAC addr of " << i << " th device: "<< node->GetDevice(i)->GetAddress() );
+                        // NS_LOG_INFO("MAC addr of " << i << " th device: "<< node->GetDevice(i)->GetAddress() );
                     }
                 }
             }
@@ -547,7 +547,7 @@ main(int argc, char* argv[])
             for (int k = 0; k < num_hosts_per_rack; k++){
                 int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
                 if (host_idx >= num_detail_host_ser && host_idx < total_hosts/2 ){
-                    NS_LOG_INFO("size of tor_dummy_host_ip[i][j] " << tor_dummy_host_ip[i][j].GetN() );
+                    // NS_LOG_INFO("size of tor_dummy_host_ip[i][j] " << tor_dummy_host_ip[i][j].GetN() );
                     // Server
                     sink(tor_dummy_host_ip[i][j].GetAddress(k), tor_host[i][j][k-dum_start_idx].Get(1));
                     NS_LOG_INFO("Install Sink on host ID " << host_idx << "; " << " N th tor dev: " << k - dum_start_idx );
@@ -555,7 +555,7 @@ main(int argc, char* argv[])
                     int client_idx = total_hosts - host_idx - 1;
                     struct HostPos client_pos = GetPodRackHostFromHostIdx(client_idx, num_pod, racks_per_pod, num_hosts_per_rack);
                     NS_LOG_INFO("Install Client on host ID " << client_idx  << "; " << " N th tor dev: "<< client_pos.host - dum_start_idx);
-                    NS_LOG_INFO("Client pod: " << client_pos.pod << " rack:" << client_pos.rack << " host: " << client_pos.host);
+                    // NS_LOG_INFO("Client pod: " << client_pos.pod << " rack:" << client_pos.rack << " host: " << client_pos.host);
                     client(tor_dummy_host_ip[i][j].GetAddress(k), tor_host[client_pos.pod][client_pos.rack][client_pos.host - dum_start_idx].Get(1), flow_size);
 
                 }
@@ -567,7 +567,7 @@ main(int argc, char* argv[])
 
 
     // Print all NetDevices and their IP addresses
-    PrintAllNetDeviceIPs();
+    // PrintAllNetDeviceIPs();
 
 
     GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
