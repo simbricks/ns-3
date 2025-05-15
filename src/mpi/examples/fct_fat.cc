@@ -26,6 +26,15 @@
 using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("FCT_FatTree_Example");
 
+struct DetailHostPair {
+    int num_detail_ser;
+    int num_detail_cli;
+};
+struct HostPos {
+    int pod;
+    int rack;
+    int host;
+};
 std::vector<std::string> simbricksPortPaths;
 std::map<Ipv4Address, int> received_bytes; // Map source IP to received bytes
 int flow_size = 2; // in MB
@@ -108,20 +117,20 @@ void PrintAllNetDeviceIPs() {
     }
 }
 
-std::map<std::string, int> GetPodRackHostFromHostIdx(
+struct HostPos GetPodRackHostFromHostIdx(
     int host_idx, int num_pod, int racks_per_pod, int num_hosts_per_rack)
 {
 
-    std::map<std::string, int> result;
+    struct HostPos result;
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
             for (int k = 0; k < num_hosts_per_rack; k++){
                 
                 int current_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
                 if (current_idx == host_idx){
-                    result["pod"] = i;
-                    result["rack"] = j;
-                    result["host"] = k;
+                    result.pod = i;
+                    result.rack = j;
+                    result.host = k;
                 }
             }
         }
@@ -247,22 +256,41 @@ main(int argc, char* argv[])
     {
         num_detail_hosts += 1;
     }
-    int starting_host_idx = total_hosts - num_detail_hosts;
-    int last_host_idx = total_hosts - 1;
+    int starting_host_idx = 0;
 
     int num_dum_hosts = total_hosts - num_detail_hosts;
+    int num_detail_host_ser = num_detail_hosts / 2;
+    int num_detail_host_cli = num_detail_hosts / 2;
+    
     // received_bytes.resize(num_dum_hosts, 0);
-
+    
     NS_LOG_INFO("kvalue: " << k_value);
     NS_LOG_INFO("detail_host_percent: " << detail_host_percent);
     NS_LOG_INFO("total_hosts: " << total_hosts << " detail_host_num: " << num_detail_hosts);
-
+    
     // Normal Fat Tree topology
     int num_spine_sw = (k_value / 2) * (k_value / 2);
     int num_pod = k_value;
     int num_agg_sw = k_value / 2;
     int racks_per_pod = k_value / 2; // num_tor_sw
     int num_hosts_per_rack = k_value / 2;
+    
+    // Calculate how many detailed hosts are in each rack
+    int total_racks = num_pod * racks_per_pod;
+    std::vector<DetailHostPair> detailHostPairs(total_racks, {0, 0});
+    
+    for (int i = 0; i < num_detail_host_ser; i++)
+    {
+        detailHostPairs[i % total_racks].num_detail_ser++;
+        int cli_idx = total_racks - 1 - (i % total_racks);
+        detailHostPairs[cli_idx].num_detail_cli++;
+    }
+    for (int i = 0; i < total_racks; i++)
+    {
+        NS_LOG_INFO("Rack " << i << " has " << detailHostPairs[i].num_detail_ser << " detail servers and "
+                            << detailHostPairs[i].num_detail_cli << " detail clients");
+    }
+
 
     // int num_spine_sw = n_spine_sw;
     // int num_pod = n_agg_bl;
@@ -286,10 +314,12 @@ main(int argc, char* argv[])
     NetDeviceContainer tor_hostd[num_pod][racks_per_pod][num_hosts_per_rack];
     NetDeviceContainer tord[num_pod][racks_per_pod];
 
-    // Other side netdev of tor links, those assigned IP addresses
-    NetDeviceContainer tord_op[num_pod][racks_per_pod]; 
+    NetDeviceContainer agg_down_port[num_pod][racks_per_pod];
+    //dummy host netdev of tor links, those assigned IP addresses
+    NetDeviceContainer tor_dummy_host_port[num_pod][racks_per_pod]; 
 
-    Ipv4InterfaceContainer tord_op_ip[num_pod][racks_per_pod];
+    Ipv4InterfaceContainer agg_tor_ip[num_pod][racks_per_pod];
+    Ipv4InterfaceContainer tor_dummy_host_ip[num_pod][racks_per_pod];
     Ipv4InterfaceContainer spine_agg_ip[num_spine_sw][num_pod];
 
     SimpleNetDeviceHelper simp_netdev;
@@ -325,7 +355,7 @@ main(int argc, char* argv[])
                 agg_tor[i][j][k].Add(pod_sw[i][1].Get(k));
                 agg_tord[i][j][k] = simp_netdev.Install(agg_tor[i][j][k]);
                 tord[i][k].Add(agg_tord[i][j][k].Get(1));
-                tord_op[i][k].Add(agg_tord[i][j][k].Get(0));
+                agg_down_port[i][k].Add(agg_tord[i][j][k].Get(0));
             }
         }
     }
@@ -333,32 +363,16 @@ main(int argc, char* argv[])
     // Create Hosts and connect to ToR Switches
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
-            for (int k = 0; k < num_hosts_per_rack; k++){
-                tor_host[i][j][k].Add(pod_sw[i][1].Get(j)); // ToR switch node
+            int num_dum_hosts = num_hosts_per_rack -  detailHostPairs[i * racks_per_pod + j].num_detail_ser - detailHostPairs[i * racks_per_pod + j].num_detail_cli;
+            NS_LOG_INFO("Rack " << i * racks_per_pod + j << " has " << num_dum_hosts << " dummy hosts");
 
-                int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
-                // NS_LOG_INFO("Host " << host_idx << " connected to pod " << i << " rack " << j << " host " << k);
-                if (host_idx < starting_host_idx){
-                    // Dummy host
-                    tor_host[i][j][k].Create(1); // Host node
-                    tor_hostd[i][j][k] = simp_netdev.Install(tor_host[i][j][k]);
-                    tord[i][j].Add(tor_hostd[i][j][k].Get(0));
-                    tord_op[i][j].Add(tor_hostd[i][j][k].Get(1));
-                }
-                else{
-                    // Detailed host
-                    // int detail_host_idx = host_idx - starting_host_idx;
-                    // Ptr<simbricks::SimbricksNetDevice> device = CreateObject<simbricks::SimbricksNetDevice> ();
-                    // if (!device)
-                    // {
-                    //     NS_LOG_INFO("Failed to create SimbricksNetDevice");
-                    //     return 1;
-                    // }
-                    // std::string& cpp = simbricksPortPaths[detail_host_idx];
-                    // device->SetAttribute("UnixSocket", StringValue(cpp));
-                    // device->Start();
-                    // tord[i][j].Add(device);
-                }
+            for (int k = 0; k < num_dum_hosts; k++){
+                tor_host[i][j][k].Add(pod_sw[i][1].Get(j)); // ToR switch node
+                // Dummy host
+                tor_host[i][j][k].Create(1); // Host node
+                tor_hostd[i][j][k] = simp_netdev.Install(tor_host[i][j][k]);
+                tord[i][j].Add(tor_hostd[i][j][k].Get(0));
+                tor_dummy_host_port[i][j].Add(tor_hostd[i][j][k].Get(1));
             }
         }
     }
@@ -384,12 +398,11 @@ main(int argc, char* argv[])
 
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
-            for (int k = 0; k < num_hosts_per_rack; k++){
-                
-                int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
-                if (host_idx < starting_host_idx){
-                    ip_stack.Install(tor_host[i][j][k].Get(1));
-                }
+            int num_dum_hosts = num_hosts_per_rack -  detailHostPairs[i * racks_per_pod + j].num_detail_ser - detailHostPairs[i * racks_per_pod + j].num_detail_cli;
+            NS_LOG_INFO("Rack " << i * racks_per_pod + j << " has " << num_dum_hosts << " dummy hosts");
+
+            for (int k = 0; k < num_dum_hosts; k++){
+                ip_stack.Install(tor_host[i][j][k].Get(1));
             }
         }
     }
@@ -398,16 +411,24 @@ main(int argc, char* argv[])
 	int sub = 0;
 	char* ip_base = new char[10];
     inc_address_base(ip_base, sub);
-    ipv4.SetBase(ip_base, "255.255.255.0");
     
     // Assign IP addresses to all hosts
     // Each ToR switch has a /24 subnet starting from 10.0.0.0
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
-            // NS_LOG_INFO(i << "th pod " << j << "th rack IP base: " << ip_base);
-            tord_op_ip[i][j] = ipv4.Assign(tord_op[i][j]);
-            inc_address_base(ip_base, sub);
+            NS_LOG_INFO(i << "th pod " << j << "th rack IP base: " << ip_base);
+            int rack_idx = i * racks_per_pod + j;
+            int dum_start_idx = detailHostPairs[rack_idx].num_detail_ser;
             ipv4.SetBase(ip_base, "255.255.255.0");
+            // Install on agg_down_port first
+            agg_tor_ip[i][j] = ipv4.Assign(agg_down_port[i][j]);
+            // Install on dummy host
+            std::ostringstream s_stream;
+            s_stream << "0.0.0." << k_value/2 + 1 + dum_start_idx;
+            std::string s = s_stream.str();
+            ipv4.SetBase(ip_base, "255.255.255.0", s.c_str());
+            tor_dummy_host_ip[i][j] = ipv4.Assign(tor_dummy_host_port[i][j]);
+            inc_address_base(ip_base, sub);
         }
     }
 
@@ -460,13 +481,19 @@ main(int argc, char* argv[])
 
                 int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
                 // NS_LOG_INFO("Host " << host_idx << " connected to pod " << i << " rack " << j << " host " << k);
-                if (host_idx < starting_host_idx){
-                    // Dummy host
-
-                }
-                else{
+                if ((host_idx < num_detail_host_ser) || (host_idx > num_detail_host_ser + num_dum_hosts - 1)){
+                    NS_LOG_INFO("Add detail host " << host_idx);
                     // Detailed host
-                    int detail_host_idx = host_idx - starting_host_idx;
+                    int detail_host_idx;
+                    if (host_idx < total_hosts / 2){
+                        //server
+                        detail_host_idx = host_idx * 2;
+                    }
+                    else{
+                        //client
+                        detail_host_idx = (total_hosts - 1 - host_idx) * 2 + 1;
+                    }
+
                     std::ostringstream mac_stream;
                     mac_stream << "00:90:00:00:00:" << std::setw(2) << std::setfill('0') << std::hex << host_idx;
                     std::string mac_addr = mac_stream.str();
@@ -515,18 +542,20 @@ main(int argc, char* argv[])
     int host_ip_start = k_value / 2; 
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
+            int dum_start_idx = detailHostPairs[i * racks_per_pod + j].num_detail_ser;
+
             for (int k = 0; k < num_hosts_per_rack; k++){
-                
                 int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
-                if (host_idx < starting_host_idx/2){
+                if (host_idx >= num_detail_host_ser && host_idx < total_hosts/2 ){
+                    NS_LOG_INFO("size of tor_dummy_host_ip[i][j] " << tor_dummy_host_ip[i][j].GetN() );
                     // Server
-                    sink(tord_op_ip[i][j].GetAddress(host_ip_start + k), tor_host[i][j][k].Get(1));
+                    sink(tor_dummy_host_ip[i][j].GetAddress(k), tor_host[i][j][k-dum_start_idx].Get(1));
                     NS_LOG_INFO("Install Sink on host ID " << host_idx );
                     // Client
-                    int client_idx = num_dum_hosts - host_idx - 1;
+                    int client_idx = total_hosts - host_idx - 1;
                      NS_LOG_INFO("Install Client on host ID " << client_idx );
-                    std::map<std::string, int> client_pos = GetPodRackHostFromHostIdx(client_idx, num_pod, racks_per_pod, num_hosts_per_rack);
-                    client(tord_op_ip[i][j].GetAddress(host_ip_start + k), tor_host[client_pos["pod"]][client_pos["rack"]][client_pos["host"]].Get(1), flow_size);
+                    struct HostPos client_pos = GetPodRackHostFromHostIdx(client_idx, num_pod, racks_per_pod, num_hosts_per_rack);
+                    client(tor_dummy_host_ip[i][j].GetAddress(k), tor_host[client_pos.pod][client_pos.rack][client_pos.host - dum_start_idx].Get(1), flow_size);
 
                 }
 
@@ -537,7 +566,7 @@ main(int argc, char* argv[])
 
 
     // Print all NetDevices and their IP addresses
-    // PrintAllNetDeviceIPs();
+    PrintAllNetDeviceIPs();
 
 
     GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
