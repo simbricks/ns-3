@@ -158,7 +158,7 @@ main(int argc, char* argv[])
     LogComponentEnable("FCT_FatTree_Example",
                        (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
 
-    LogComponentEnable("SimbricksNetDevice", LOG_LEVEL_ALL);
+    // LogComponentEnable("SimbricksNetDevice", LOG_LEVEL_ALL);
     // LogComponentEnable("BridgeHelper", LOG_LEVEL_ALL);
     // LogComponentEnable("GlobalRoutingHelper", LOG_LEVEL_ALL);
     
@@ -253,10 +253,10 @@ main(int argc, char* argv[])
     Ipv4InterfaceContainer tord_op_ip[num_pod][racks_per_pod];
     Ipv4InterfaceContainer spine_agg_ip[num_spine_sw][num_pod];
 
-    CsmaHelper simp_netdev;
-    // simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
-    // simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
-    // simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
+    SimpleNetDeviceHelper simp_netdev;
+    simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
+    simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
+    simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
     
     // Create Spine Nodes
     spine.Create(num_spine_sw);
@@ -342,7 +342,6 @@ main(int argc, char* argv[])
         ip_stack.Install(pod_sw[i][0]);
     }
     
-        NS_LOG_INFO("1: Break Point!!\n\n");
 
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
@@ -355,7 +354,6 @@ main(int argc, char* argv[])
             }
         }
     }
-    NS_LOG_INFO("2: Break Point!!\n\n");
 
 	Ipv4AddressHelper ipv4;
 	int sub = 0;
@@ -373,7 +371,6 @@ main(int argc, char* argv[])
             ipv4.SetBase(ip_base, "255.255.255.0");
         }
     }
-    NS_LOG_INFO("3: Break Point!!\n\n");
 
     // Assign IP addresses to all spine-agg links
     // NS_LOG_INFO("IP base for spine-agg devs: " << ip_base);
@@ -385,13 +382,11 @@ main(int argc, char* argv[])
         }
     }
     
-    NS_LOG_INFO("4: Break Point!!\n\n");
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
     
-    NS_LOG_INFO("5: Break Point!!\n\n");
-
-
+    // Add SimbricksNetDevice to the bridge
+    // Only after populating the routing tables
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
 
@@ -455,7 +450,7 @@ main(int argc, char* argv[])
             }
         }
     }
-    simp_netdev.EnablePcapAll("fat_tree");
+    // simp_netdev.EnablePcapAll("fat_tree");
     
 
     // Ipv4GlobalRoutingHelper::PrintRoutingTableAllAt(Seconds(0.1),
