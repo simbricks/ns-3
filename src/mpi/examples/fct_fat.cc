@@ -1,6 +1,8 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
+#include <fstream>
+#include <iostream>
 
 #include "ns3/applications-module.h"
 #include "ns3/bridge-module.h"
@@ -19,6 +21,7 @@
 #define START 0.0
 #define END 5
 #define NUM_STEPS 20
+#define HEAD_ROOM 1
 
 using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("FCT_FatTree_Example");
@@ -44,6 +47,10 @@ AddSimbricksPort(const std::string& arg)
 {
     simbricksPortPaths.push_back(arg);
     return true;
+}
+void
+PrintClientStart(){
+    NS_LOG_INFO("Client started at " << Simulator::Now().GetMicroSeconds() << " usec");
 }
 
 void
@@ -101,6 +108,28 @@ void PrintAllNetDeviceIPs() {
     }
 }
 
+std::map<std::string, int> GetPodRackHostFromHostIdx(
+    int host_idx, int num_pod, int racks_per_pod, int num_hosts_per_rack)
+{
+
+    std::map<std::string, int> result;
+    for (int i = 0; i < num_pod; i++){
+        for (int j = 0; j < racks_per_pod; j++){
+            for (int k = 0; k < num_hosts_per_rack; k++){
+                
+                int current_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
+                if (current_idx == host_idx){
+                    result["pod"] = i;
+                    result["rack"] = j;
+                    result["host"] = k;
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
 void
 log_fct(Ptr<Packet const> packet, const Address& address)
 {
@@ -109,10 +138,11 @@ log_fct(Ptr<Packet const> packet, const Address& address)
 
     // Increment the received bytes for the source IP
     received_bytes[sourceIp] += packet->GetSize();
-    if (received_bytes[sourceIp] >= flow_size * 1000000)
+    Time curTime = Simulator::Now().GetMicroSeconds();
+    if (received_bytes[sourceIp] >= flow_size * 1024 * 1024)
     {
-        NS_LOG_INFO("Sink " << " Completed receiving at "
-                            << Simulator::Now().GetMicroSeconds() << " usec");
+        NS_LOG_INFO("Sink " << " Completed receiving " << received_bytes[sourceIp] << " Bytes at "
+                            << curTime << " usec" << "FCT: " << curTime - (START - HEAD_ROOM) * 1000000 << " usec");
         
     }
 }
@@ -124,7 +154,7 @@ sink(ns3::Ipv4Address add, ns3::Ptr<Node> node)
     ApplicationContainer sinkApp = packetSinkHelper.Install(node);
     
     sinkApp.Get(0)->TraceConnectWithoutContext("Rx", MakeCallback(&log_fct));
-    sinkApp.Start(Seconds(START));
+    sinkApp.Start(Seconds(START + HEAD_ROOM));
     sinkApp.Stop(Seconds(END));
 }
 
@@ -136,18 +166,21 @@ client(ns3::Ipv4Address add, ns3::Ptr<Node> node, int flow_size)
                         StringValue("ns3::ConstantRandomVariable[Constant=1000000000000]"));
     client.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
     client.SetAttribute("DataRate", DataRateValue(DataRate("5000Mbps")));
-    client.SetAttribute("MaxBytes", UintegerValue(flow_size * 1000000));
+    client.SetAttribute("MaxBytes", UintegerValue(flow_size * 1024 * 1024));
 
     client.SetAttribute("PacketSize", UintegerValue(1500));
 
     ApplicationContainer clientApp = client.Install(node);
-    clientApp.Start(Seconds(START));
+    clientApp.Start(Seconds(START + HEAD_ROOM));
     clientApp.Stop(Seconds(END));
 }
 
 int
 main(int argc, char* argv[])
 {
+    std::ofstream logFile("fct.out");
+    std::clog.rdbuf(logFile.rdbuf());
+
     // LogComponentEnable("PacketSink",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("OnOffApplication",(LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("Ipv4GlobalRouting", (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
@@ -202,7 +235,7 @@ main(int argc, char* argv[])
     int num_detail_hosts = std::round(total_hosts * detail_host_percent);
     if (num_detail_hosts == 0)
     {
-        num_detail_hosts = 2;
+        num_detail_hosts = 0;
     }
     else if (num_detail_hosts % 2 != 0)
     {
@@ -254,7 +287,7 @@ main(int argc, char* argv[])
     Ipv4InterfaceContainer spine_agg_ip[num_spine_sw][num_pod];
 
     SimpleNetDeviceHelper simp_netdev;
-    simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
+    simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("256KB")));
     simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
     simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
     
@@ -469,8 +502,33 @@ main(int argc, char* argv[])
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1), flow_size);
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
     
-    sink(tord_op_ip[3][0].GetAddress(2), tor_host[3][0][0].Get(1));
-    client(tord_op_ip[3][0].GetAddress(2), tor_host[3][1][0].Get(1), flow_size);
+
+    // sink(tord_op_ip[3][0].GetAddress(2), tor_host[3][0][0].Get(1));
+    // client(tord_op_ip[3][0].GetAddress(2), tor_host[3][1][0].Get(1), flow_size);
+
+    int host_ip_start = k_value / 2; 
+    for (int i = 0; i < num_pod; i++){
+        for (int j = 0; j < racks_per_pod; j++){
+            for (int k = 0; k < num_hosts_per_rack; k++){
+                
+                int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
+                if (host_idx < starting_host_idx/2){
+                    // Server
+                    sink(tord_op_ip[i][j].GetAddress(host_ip_start + k), tor_host[i][j][k].Get(1));
+                    NS_LOG_INFO("Install Sink on host ID " << host_idx );
+                    // Client
+                    int client_idx = num_dum_hosts - host_idx - 1;
+                     NS_LOG_INFO("Install Client on host ID " << client_idx );
+                    std::map<std::string, int> client_pos = GetPodRackHostFromHostIdx(client_idx, num_pod, racks_per_pod, num_hosts_per_rack);
+                    client(tord_op_ip[i][j].GetAddress(host_ip_start + k), tor_host[client_pos["pod"]][client_pos["rack"]][client_pos["host"]].Get(1), flow_size);
+
+                }
+
+                }
+            }
+    }
+
+
 
     // Print all NetDevices and their IP addresses
     // PrintAllNetDeviceIPs();
@@ -478,6 +536,7 @@ main(int argc, char* argv[])
 
     GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
     Simulator::Schedule(Seconds(0.0), &PrintSimProgress);
+    Simulator::Schedule(Seconds(START + HEAD_ROOM), &PrintClientStart);
     Simulator::Stop(Seconds(END));
 
     NS_LOG_INFO("Run.");
