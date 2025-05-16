@@ -221,9 +221,9 @@ main(int argc, char* argv[])
     Time::SetResolution(Time::Unit::PS);
 
     Time linkLatency(NanoSeconds(500));
-    DataRate linkRate("10Gb/s");
-    DataRate spine_agg_linkRate("1000Gb/s");
-    DataRate agg_tor_linkRate("400Gb/s");
+    DataRate linkRate("40Gb/s");
+    DataRate spine_agg_linkRate("200Gb/s");
+    DataRate agg_tor_linkRate("100Gb/s");
 
     double ecnTh = 200000;
     int k_value = 4;
