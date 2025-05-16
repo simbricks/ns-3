@@ -218,7 +218,7 @@ main(int argc, char* argv[])
     
 
     Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1460));
-    Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue(TcpNewReno::GetTypeId()));
+    // Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue(TcpNewReno::GetTypeId()));
     Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting", BooleanValue(true));
     Time::SetResolution(Time::Unit::PS);
 
@@ -557,14 +557,14 @@ main(int argc, char* argv[])
     
     
     // different pod
-    // sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
-    // client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
+    sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
+    client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
     // different rack in the same pod
     sink(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][0][2].Get(1));
     client(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][1][0].Get(1), flow_size);
     // same rack
-    // sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
-    // client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
+    sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
+    client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
 
 /*
     
