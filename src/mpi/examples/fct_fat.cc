@@ -185,7 +185,7 @@ client(ns3::Ipv4Address add, ns3::Ptr<Node> node, int flow_size)
 
     Ptr<UniformRandomVariable> uv = CreateObject<UniformRandomVariable>();
     uv->SetAttribute("Min", DoubleValue(0));
-    uv->SetAttribute("Max", DoubleValue(3));
+    uv->SetAttribute("Max", DoubleValue(2));
     Time randomDelay = Seconds(uv->GetValue());
     Time startTime = Seconds(START + HEAD_ROOM + randomDelay.GetSeconds());
 
