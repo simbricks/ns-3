@@ -208,6 +208,7 @@ main(int argc, char* argv[])
     // LogComponentEnable("BridgeNetDevice", (LogLevel)(LOG_LEVEL_ALL | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     // LogComponentEnable("CsmaNetDevice", LOG_LEVEL_INFO);
     // LogComponentEnable("Queue", LOG_LEVEL_INFO);
+    // LogComponentEnable("TcpSocketBase", (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
     LogComponentEnable("FCT_FatTree_Example",
                        (LogLevel)(LOG_LEVEL_INFO | LOG_PREFIX_NODE | LOG_PREFIX_TIME));
 
@@ -216,7 +217,8 @@ main(int argc, char* argv[])
     // LogComponentEnable("GlobalRoutingHelper", LOG_LEVEL_ALL);
     
 
-
+    Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1460));
+    Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue(TcpNewReno::GetTypeId()));
     Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting", BooleanValue(true));
     Time::SetResolution(Time::Unit::PS);
 
@@ -553,18 +555,18 @@ main(int argc, char* argv[])
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1), flow_size);
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
     
-    /*
+    
     // different pod
-    sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
-    client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
+    // sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
+    // client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
     // different rack in the same pod
     sink(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][0][2].Get(1));
     client(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][1][0].Get(1), flow_size);
     // same rack
-    sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
-    client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
-    */
+    // sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
+    // client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
 
+/*
     
     int host_ip_start = k_value / 2; 
     for (int i = 0; i < num_pod; i++){
@@ -592,7 +594,7 @@ main(int argc, char* argv[])
                 }
             }
     }
-
+*/
 
 
     // Print all NetDevices and their IP addresses
