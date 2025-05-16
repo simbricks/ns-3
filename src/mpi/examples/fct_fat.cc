@@ -544,19 +544,21 @@ main(int argc, char* argv[])
         for (int j = 0; j < racks_per_pod; j++){
             int dum_start_idx = detailHostPairs[i * racks_per_pod + j].num_detail_ser;
 
+
             for (int k = 0; k < num_hosts_per_rack; k++){
                 int host_idx = num_pod * racks_per_pod * k + i * racks_per_pod + j;
                 if (host_idx >= num_detail_host_ser && host_idx < total_hosts/2 ){
-                    // NS_LOG_INFO("size of tor_dummy_host_ip[i][j] " << tor_dummy_host_ip[i][j].GetN() );
+                    NS_LOG_INFO("size of tor_dummy_host_ip["<< i << "][" <<j <<"] " << tor_dummy_host_ip[i][j].GetN() );
                     // Server
                     sink(tor_dummy_host_ip[i][j].GetAddress(k), tor_host[i][j][k-dum_start_idx].Get(1));
                     NS_LOG_INFO("Install Sink on host ID " << host_idx << "; " << " N th tor dev: " << k - dum_start_idx );
                     // Client
                     int client_idx = total_hosts - host_idx - 1;
                     struct HostPos client_pos = GetPodRackHostFromHostIdx(client_idx, num_pod, racks_per_pod, num_hosts_per_rack);
-                    NS_LOG_INFO("Install Client on host ID " << client_idx  << "; " << " N th tor dev: "<< client_pos.host - dum_start_idx);
-                    // NS_LOG_INFO("Client pod: " << client_pos.pod << " rack:" << client_pos.rack << " host: " << client_pos.host);
-                    client(tor_dummy_host_ip[i][j].GetAddress(k), tor_host[client_pos.pod][client_pos.rack][client_pos.host - dum_start_idx].Get(1), flow_size);
+                    int dum_start_idx_cli = detailHostPairs[client_pos.pod * racks_per_pod + client_pos.rack].num_detail_ser;
+                    NS_LOG_INFO("Install Client on host ID " << client_idx  << "; " << " N th tor dev: "<< client_pos.host - dum_start_idx_cli);
+                    NS_LOG_INFO("Client pod: " << client_pos.pod << " rack:" << client_pos.rack << " host: " << client_pos.host << " dum_start_idx: " << dum_start_idx_cli);
+                    client(tor_dummy_host_ip[i][j].GetAddress(k), tor_host[client_pos.pod][client_pos.rack][client_pos.host - dum_start_idx_cli].Get(1), flow_size);
 
                 }
 
