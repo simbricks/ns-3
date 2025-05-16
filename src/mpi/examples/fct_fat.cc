@@ -17,6 +17,7 @@
 #include "ns3/simple-net-device.h"
 #include "ns3/pcap-file-wrapper.h"
 #include "ns3/trace-helper.h"
+#include "ns3/flow-monitor-module.h"
 
 #define START 0.0
 #define END 5
@@ -221,6 +222,9 @@ main(int argc, char* argv[])
 
     Time linkLatency(NanoSeconds(500));
     DataRate linkRate("10Gb/s");
+    DataRate spine_agg_linkRate("1000Gb/s");
+    DataRate agg_tor_linkRate("400Gb/s");
+
     double ecnTh = 200000;
     int k_value = 4;
     float detail_host_percent = 0.1;
@@ -335,9 +339,10 @@ main(int argc, char* argv[])
 
     SimpleNetDeviceHelper simp_netdev;
     simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
-    simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
+    simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(spine_agg_linkRate));
     simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
-    
+
+
     // Create Spine Nodes
     spine.Create(num_spine_sw);
     
@@ -357,7 +362,8 @@ main(int argc, char* argv[])
             spine_aggd[i][j] = simp_netdev.Install(spine_agg[i][j]);
         }
     }
-
+    
+    simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(agg_tor_linkRate));
     // Connect Aggregation Switches to ToR Switches
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < num_agg_sw; j++){
@@ -370,7 +376,8 @@ main(int argc, char* argv[])
             }
         }
     }
-    
+    simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
+
     // Create Hosts and connect to ToR Switches
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
@@ -546,12 +553,18 @@ main(int argc, char* argv[])
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[0][1][0].Get(1), flow_size);
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
     
+    /*
+    // different pod
+    sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
+    client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
+    // different rack in the same pod
+    sink(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][0][2].Get(1));
+    client(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][1][0].Get(1), flow_size);
+    // same rack
+    sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
+    client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
+    */
 
-    // sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
-    // client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
-
-    // sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
-    // client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
     
     int host_ip_start = k_value / 2; 
     for (int i = 0; i < num_pod; i++){
@@ -585,6 +598,9 @@ main(int argc, char* argv[])
     // Print all NetDevices and their IP addresses
     // PrintAllNetDeviceIPs();
 
+    // Ptr<FlowMonitor> flowMonitor;
+    // FlowMonitorHelper flowHelper;
+    // flowMonitor = flowHelper.InstallAll();
 
     GlobalValue::Bind("ChecksumEnabled", BooleanValue(true));
     Simulator::Schedule(Seconds(0.0), &PrintSimProgress);
@@ -594,6 +610,7 @@ main(int argc, char* argv[])
     NS_LOG_INFO("Run.");
     Simulator::Run();
 
+    // flowMonitor->SerializeToXmlFile("flowmon-results.xml", true, true);
     Simulator::Destroy();
     NS_LOG_INFO("Done.");
 }
