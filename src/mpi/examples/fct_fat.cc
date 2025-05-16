@@ -37,6 +37,7 @@ struct HostPos {
 };
 std::vector<std::string> simbricksPortPaths;
 std::map<Ipv4Address, int> received_bytes; // Map source IP to received bytes
+std::map<Ipv4Address, int> rand_delay;
 int flow_size = 2; // in MB
 
 void inc_address_base(char* array, int &sub){
@@ -147,11 +148,11 @@ log_fct(Ptr<Packet const> packet, const Address& address)
 
     // Increment the received bytes for the source IP
     received_bytes[sourceIp] += packet->GetSize();
-    uint64_t start_time = (HEAD_ROOM) * 1000000;
+    uint64_t start_time = rand_delay[sourceIp];
 
     if (received_bytes[sourceIp] >= flow_size * 1024 * 1024)
-    {
-        NS_LOG_INFO("Sink " << " Completed receiving " << received_bytes[sourceIp] << " Bytes from" << sourceIp << " at "
+    {   
+        NS_LOG_INFO("Sink " << "started at: " << start_time << " Completed receiving " << received_bytes[sourceIp] << " Bytes from" << sourceIp << " at "
                             << Simulator::Now().GetMicroSeconds() << " usec" << " FCT: " << Simulator::Now().GetMicroSeconds() - start_time << " usec");
         
     }
@@ -181,7 +182,17 @@ client(ns3::Ipv4Address add, ns3::Ptr<Node> node, int flow_size)
     client.SetAttribute("PacketSize", UintegerValue(1500));
 
     ApplicationContainer clientApp = client.Install(node);
-    clientApp.Start(Seconds(START + HEAD_ROOM));
+
+    Ptr<UniformRandomVariable> uv = CreateObject<UniformRandomVariable>();
+    uv->SetAttribute("Min", DoubleValue(0));
+    uv->SetAttribute("Max", DoubleValue(3));
+    Time randomDelay = Seconds(uv->GetValue());
+    Time startTime = Seconds(START + HEAD_ROOM + randomDelay.GetSeconds());
+
+    rand_delay[node->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal()] = startTime.GetMicroSeconds();
+    NS_LOG_INFO("Client " << node->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " started at " <<  START + HEAD_ROOM + randomDelay.GetSeconds() << " sec");
+    
+    clientApp.Start(Seconds(START + HEAD_ROOM + randomDelay.GetSeconds()));
     clientApp.Stop(Seconds(END));
 }
 
@@ -323,7 +334,7 @@ main(int argc, char* argv[])
     Ipv4InterfaceContainer spine_agg_ip[num_spine_sw][num_pod];
 
     SimpleNetDeviceHelper simp_netdev;
-    simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("256KB")));
+    simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
     simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
     simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
     
@@ -536,9 +547,12 @@ main(int argc, char* argv[])
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
     
 
-    // sink(tord_op_ip[3][0].GetAddress(2), tor_host[3][0][0].Get(1));
-    // client(tord_op_ip[3][0].GetAddress(2), tor_host[3][1][0].Get(1), flow_size);
+    // sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
+    // client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
 
+    // sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
+    // client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
+    
     int host_ip_start = k_value / 2; 
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
