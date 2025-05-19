@@ -507,11 +507,11 @@ main(int argc, char* argv[])
                     int detail_host_idx;
                     if (host_idx < total_hosts / 2){
                         //server
-                        detail_host_idx = host_idx * 2;
+                        detail_host_idx = host_idx;
                     }
                     else{
                         //client
-                        detail_host_idx = (total_hosts - 1 - host_idx) * 2 + 1;
+                        detail_host_idx = host_idx - (total_hosts - num_detail_host_cli) + num_detail_host_ser ;
                     }
 
                     std::ostringstream mac_stream;
@@ -556,17 +556,17 @@ main(int argc, char* argv[])
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
     
     
-    // different pod
-    sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
-    client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
-    // different rack in the same pod
-    sink(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][0][2].Get(1));
-    client(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][1][0].Get(1), flow_size);
-    // same rack
-    sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
-    client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
+    // // different pod
+    // sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
+    // client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
+    // // different rack in the same pod
+    // sink(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][0][2].Get(1));
+    // client(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][1][0].Get(1), flow_size);
+    // // same rack
+    // sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
+    // client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
 
-/*
+
     
     int host_ip_start = k_value / 2; 
     for (int i = 0; i < num_pod; i++){
@@ -594,7 +594,7 @@ main(int argc, char* argv[])
                 }
             }
     }
-*/
+
 
 
     // Print all NetDevices and their IP addresses
