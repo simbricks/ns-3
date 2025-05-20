@@ -23,6 +23,7 @@
 #define END 5
 #define NUM_STEPS 20
 #define HEAD_ROOM 1
+#define PCAP_ENABLE // Use Csma devices to generate pcap files
 
 using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("FCT_FatTree_Example");
@@ -191,7 +192,7 @@ client(ns3::Ipv4Address add, ns3::Ptr<Node> node, int flow_size)
     Time startTime = Seconds(START + HEAD_ROOM + randomDelay.GetSeconds());
 
     rand_delay[node->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal()] = startTime.GetMicroSeconds();
-    NS_LOG_INFO("Client " << node->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " started at " <<  START + HEAD_ROOM + randomDelay.GetSeconds() << " sec");
+    NS_LOG_INFO("Client " << node->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " send to " << add <<  " started at " <<  START + HEAD_ROOM + randomDelay.GetSeconds() << " sec");
     
     clientApp.Start(Seconds(START + HEAD_ROOM + randomDelay.GetSeconds()));
     clientApp.Stop(Seconds(END));
@@ -339,10 +340,17 @@ main(int argc, char* argv[])
     Ipv4InterfaceContainer tor_dummy_host_ip[num_pod][racks_per_pod];
     Ipv4InterfaceContainer spine_agg_ip[num_spine_sw][num_pod];
 
+#ifdef PCAP_ENABLE
+    CsmaHelper simp_netdev;
+    simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
+    simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
+#else
     SimpleNetDeviceHelper simp_netdev;
     simp_netdev.SetQueue("ns3::DropTailQueue", "MaxSize", QueueSizeValue(QueueSize("5MB")));
     simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(spine_agg_linkRate));
     simp_netdev.SetChannelAttribute("Delay", TimeValue(linkLatency));
+#endif
+    
 
 
     // Create Spine Nodes
@@ -364,8 +372,10 @@ main(int argc, char* argv[])
             spine_aggd[i][j] = simp_netdev.Install(spine_agg[i][j]);
         }
     }
-    
+#ifdef PCAP_ENABLE
+#else
     simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(agg_tor_linkRate));
+#endif
     // Connect Aggregation Switches to ToR Switches
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < num_agg_sw; j++){
@@ -378,8 +388,10 @@ main(int argc, char* argv[])
             }
         }
     }
+#ifdef PCAP_ENABLE
+#else
     simp_netdev.SetDeviceAttribute("DataRate", DataRateValue(linkRate));
-
+#endif
     // Create Hosts and connect to ToR Switches
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
@@ -536,7 +548,10 @@ main(int argc, char* argv[])
             }
         }
     }
-    // simp_netdev.EnablePcapAll("fat_tree");
+#ifdef PCAP_ENABLE
+    simp_netdev.EnablePcapAll("fat_tree");
+#else
+#endif
     
 
     // Ipv4GlobalRoutingHelper::PrintRoutingTableAllAt(Seconds(0.1),
@@ -556,18 +571,19 @@ main(int argc, char* argv[])
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
     
     
-    // // different pod
-    // sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
-    // client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[3][1][0].Get(1), flow_size);
-    // // different rack in the same pod
-    // sink(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][0][2].Get(1));
-    // client(tor_dummy_host_ip[1][0].GetAddress(2), tor_host[1][1][0].Get(1), flow_size);
-    // // same rack
-    // sink(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][1].Get(1));
-    // client(tor_dummy_host_ip[0][0].GetAddress(1), tor_host[0][0][3].Get(1), flow_size);
+    // different pod
+    sink(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[2][0][0].Get(1));
+    client(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[3][1][1].Get(1), flow_size);
+    // different rack in the same pod
+    sink(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][0][0].Get(1));
+    client(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][1][1].Get(1), flow_size);
+    // same rack
+    sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
+    client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][1].Get(1), flow_size);
 
 
-    
+    /*
+        
     int host_ip_start = k_value / 2; 
     for (int i = 0; i < num_pod; i++){
         for (int j = 0; j < racks_per_pod; j++){
@@ -594,7 +610,7 @@ main(int argc, char* argv[])
                 }
             }
     }
-
+*/
 
 
     // Print all NetDevices and their IP addresses
