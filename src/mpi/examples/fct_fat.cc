@@ -23,7 +23,7 @@
 #define END 5
 #define NUM_STEPS 20
 #define HEAD_ROOM 1
-#define PCAP_ENABLE // Use Csma devices to generate pcap files
+// #define PCAP_ENABLE // Use Csma devices to generate pcap files
 
 using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("FCT_FatTree_Example");
@@ -178,10 +178,10 @@ client(ns3::Ipv4Address add, ns3::Ptr<Node> node, int flow_size)
     client.SetAttribute("OnTime",
                         StringValue("ns3::ConstantRandomVariable[Constant=1000000000000]"));
     client.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    client.SetAttribute("DataRate", DataRateValue(DataRate("5000Mbps")));
+    client.SetAttribute("DataRate", DataRateValue(DataRate("20Gbps")));
     client.SetAttribute("MaxBytes", UintegerValue(flow_size * 1024 * 1024));
 
-    client.SetAttribute("PacketSize", UintegerValue(1500));
+    client.SetAttribute("PacketSize", UintegerValue(1460));
 
     ApplicationContainer clientApp = client.Install(node);
 
@@ -220,12 +220,15 @@ main(int argc, char* argv[])
 
     Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1460));
     // Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue(TcpNewReno::GetTypeId()));
-    Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting", BooleanValue(true));
+    // Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting", BooleanValue(true));
+    Config::SetDefault("ns3::TcpSocketBase::MinRto", TimeValue(MilliSeconds(10)));
+    Config::SetDefault("ns3::ArpCache::PendingQueueSize", UintegerValue(512));
+    Config::SetDefault("ns3::ArpL3Protocol::RequestJitter", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=0.0]"));
     Time::SetResolution(Time::Unit::PS);
 
     Time linkLatency(NanoSeconds(500));
     DataRate linkRate("40Gb/s");
-    DataRate spine_agg_linkRate("200Gb/s");
+    DataRate spine_agg_linkRate("400Gb/s");
     DataRate agg_tor_linkRate("100Gb/s");
 
     double ecnTh = 200000;
@@ -549,7 +552,7 @@ main(int argc, char* argv[])
         }
     }
 #ifdef PCAP_ENABLE
-    simp_netdev.EnablePcapAll("fat_tree");
+    // simp_netdev.EnablePcapAll("fat_tree");
 #else
 #endif
     
@@ -571,12 +574,12 @@ main(int argc, char* argv[])
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
     
     
-    // different pod
-    sink(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[2][0][0].Get(1));
-    client(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[3][1][1].Get(1), flow_size);
-    // different rack in the same pod
-    sink(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][0][0].Get(1));
-    client(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][1][1].Get(1), flow_size);
+    // // different pod
+    // sink(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[2][0][0].Get(1));
+    // client(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[3][1][1].Get(1), flow_size);
+    // // different rack in the same pod
+    // sink(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][0][0].Get(1));
+    // client(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][1][1].Get(1), flow_size);
     // same rack
     sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
     client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][1].Get(1), flow_size);
