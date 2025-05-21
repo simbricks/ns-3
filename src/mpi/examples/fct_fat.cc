@@ -178,7 +178,7 @@ client(ns3::Ipv4Address add, ns3::Ptr<Node> node, int flow_size)
     client.SetAttribute("OnTime",
                         StringValue("ns3::ConstantRandomVariable[Constant=1000000000000]"));
     client.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-    client.SetAttribute("DataRate", DataRateValue(DataRate("20Gbps")));
+    client.SetAttribute("DataRate", DataRateValue(DataRate("40Gbps")));
     client.SetAttribute("MaxBytes", UintegerValue(flow_size * 1024 * 1024));
 
     client.SetAttribute("PacketSize", UintegerValue(1460));
@@ -574,12 +574,12 @@ main(int argc, char* argv[])
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
     
     
-    // // different pod
-    // sink(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[2][0][0].Get(1));
-    // client(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[3][1][1].Get(1), flow_size);
-    // // different rack in the same pod
-    // sink(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][0][0].Get(1));
-    // client(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][1][1].Get(1), flow_size);
+    // different pod
+    sink(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[2][0][0].Get(1));
+    client(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[3][1][1].Get(1), flow_size);
+    // different rack in the same pod
+    sink(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][0][0].Get(1));
+    client(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][1][1].Get(1), flow_size);
     // same rack
     sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
     client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][1].Get(1), flow_size);
