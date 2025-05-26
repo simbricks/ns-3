@@ -20,7 +20,7 @@
 #include "ns3/flow-monitor-module.h"
 
 #define START 0.0
-#define END 5
+#define END 15
 #define NUM_STEPS 20
 #define HEAD_ROOM 1
 // #define PCAP_ENABLE // Use Csma devices to generate pcap files
@@ -526,7 +526,7 @@ main(int argc, char* argv[])
                     }
                     else{
                         //client
-                        detail_host_idx = host_idx - (total_hosts - num_detail_host_cli) + num_detail_host_ser ;
+                        detail_host_idx = total_hosts - 1 - host_idx + num_detail_host_ser;
                     }
 
                     std::ostringstream mac_stream;
@@ -552,7 +552,7 @@ main(int argc, char* argv[])
         }
     }
 #ifdef PCAP_ENABLE
-    // simp_netdev.EnablePcapAll("fat_tree");
+    simp_netdev.EnablePcapAll("fat_tree");
 #else
 #endif
     
@@ -574,18 +574,18 @@ main(int argc, char* argv[])
     // client(tord_op_ip[0][0].GetAddress(2), tor_host[3][0][0].Get(1), flow_size);
     
     
-    // different pod
-    sink(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[2][0][0].Get(1));
-    client(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[3][1][1].Get(1), flow_size);
-    // different rack in the same pod
-    sink(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][0][0].Get(1));
-    client(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][1][1].Get(1), flow_size);
-    // same rack
-    sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
-    client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][1].Get(1), flow_size);
+    // // different pod
+    // sink(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[2][0][0].Get(1));
+    // client(tor_dummy_host_ip[2][0].GetAddress(0), tor_host[3][1][1].Get(1), flow_size);
+    // // different rack in the same pod
+    // sink(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][0][0].Get(1));
+    // client(tor_dummy_host_ip[1][0].GetAddress(0), tor_host[1][1][1].Get(1), flow_size);
+    // // same rack
+    // sink(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][0].Get(1));
+    // client(tor_dummy_host_ip[0][0].GetAddress(0), tor_host[0][0][1].Get(1), flow_size);
 
 
-    /*
+    
         
     int host_ip_start = k_value / 2; 
     for (int i = 0; i < num_pod; i++){
@@ -609,11 +609,10 @@ main(int argc, char* argv[])
                     client(tor_dummy_host_ip[i][j].GetAddress(k), tor_host[client_pos.pod][client_pos.rack][client_pos.host - dum_start_idx_cli].Get(1), flow_size);
 
                 }
-
-                }
             }
+        }
     }
-*/
+
 
 
     // Print all NetDevices and their IP addresses
