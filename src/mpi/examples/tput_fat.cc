@@ -240,7 +240,7 @@ main(int argc, char* argv[])
     
 
     Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1460));
-    // Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue(TcpNewReno::GetTypeId()));
+    Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue(TcpCubic::GetTypeId()));
     // Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting", BooleanValue(true));
     Config::SetDefault("ns3::TcpSocketBase::MinRto", TimeValue(MilliSeconds(10)));
     Config::SetDefault("ns3::ArpCache::PendingQueueSize", UintegerValue(512));
