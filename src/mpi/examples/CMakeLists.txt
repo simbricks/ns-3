@@ -63,3 +63,14 @@ build_lib_example(
                     ${libapplications}
                     ${libcsma}
 )
+build_lib_example(
+  NAME tput_fat_c
+  SOURCE_FILES tput_fat_c.cc
+  LIBRARIES_TO_LINK ${libsimbricks}
+                    ${libbridge}
+                    ${libpoint-to-point}
+                    ${libinternet}
+                    ${libred}
+                    ${libapplications}
+                    ${libcsma}
+)
