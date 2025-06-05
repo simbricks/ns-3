@@ -21,7 +21,7 @@
 
 #define START 0.0
 #define END 10
-#define NUM_STEPS 100
+#define NUM_STEPS 20
 #define BOOT_TIME 0.2
 #define CONV_WIN 1
 #define MEASURE_WIN 4.0
