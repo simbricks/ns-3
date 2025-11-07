@@ -13,7 +13,7 @@
 FatTree topology decribed in paper "A Scalable, Commodity Data Center Network Architecture, Mohammad AI-Fares, Alexander Loukissas, Amin Vadat; SIGCOMM'08"
 
 Example command to execute this script
-./ns3 run dc_fat_mpi --command-template="/usr/bin/mpiexec --allow-run-as-root -np 5 %s --num_pod=4"
+./ns3 run dc_fat_mpi --command-template="/usr/bin/mpiexec --allow-run-as-root -np 1 %s --num_pod=8"
 */
 
 
@@ -48,8 +48,8 @@ void client(ns3::Ipv4Address add, ns3::Ptr<Node> node){
 	OnOffHelper client("ns3::TcpSocketFactory", InetSocketAddress(add, 8080));
 	client.SetAttribute ("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1000000000000]"));
 	client.SetAttribute ("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
-	client.SetAttribute ("DataRate", DataRateValue (DataRate ("50000Mbps")));
-	client.SetAttribute ("PacketSize", UintegerValue (60)); 
+	client.SetAttribute ("DataRate", DataRateValue (DataRate ("1000Mbps")));
+	client.SetAttribute ("PacketSize", UintegerValue (400)); 
 	
 	ApplicationContainer clientApp = client.Install (node);
 	clientApp.Start(Seconds (START));
