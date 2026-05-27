@@ -30,6 +30,8 @@
 #include "ns3/log.h"
 #include "ns3/boolean.h"
 #include "ns3/integer.h"
+#include "ns3/pointer.h"
+#include "ns3/queue.h"
 #include "ns3/string.h"
 #include "ns3/ethernet-header.h"
 #include "ns3/simulator.h"
@@ -42,6 +44,153 @@ extern "C" {
 }
 
 NS_LOG_COMPONENT_DEFINE ("SimbricksNetDevice");
+
+/**
+ * \brief SimbricksNetDevice tag to store source, destination and protocol of each packet.
+ * Copied from SimpleNetDevice.
+ */
+class SimbricksTag : public Tag
+{
+  public:
+    /**
+     * \brief Get the type ID.
+     * \return the object TypeId
+     */
+    static TypeId GetTypeId();
+    TypeId GetInstanceTypeId() const override;
+
+    uint32_t GetSerializedSize() const override;
+    void Serialize(TagBuffer i) const override;
+    void Deserialize(TagBuffer i) override;
+
+    /**
+     * Set the source address
+     * \param src source address
+     */
+    void SetSrc(Mac48Address src);
+    /**
+     * Get the source address
+     * \return the source address
+     */
+    Mac48Address GetSrc() const;
+
+    /**
+     * Set the destination address
+     * \param dst destination address
+     */
+    void SetDst(Mac48Address dst);
+    /**
+     * Get the destination address
+     * \return the destination address
+     */
+    Mac48Address GetDst() const;
+
+    /**
+     * Set the protocol number
+     * \param proto protocol number
+     */
+    void SetProto(uint16_t proto);
+    /**
+     * Get the protocol number
+     * \return the protocol number
+     */
+    uint16_t GetProto() const;
+
+    void Print(std::ostream& os) const override;
+
+  private:
+    Mac48Address m_src;        //!< source address
+    Mac48Address m_dst;        //!< destination address
+    uint16_t m_protocolNumber; //!< protocol number
+};
+
+NS_OBJECT_ENSURE_REGISTERED(SimbricksTag);
+
+TypeId
+SimbricksTag::GetTypeId()
+{
+    static TypeId tid = TypeId("ns3::SimbricksTag")
+                            .SetParent<Tag>()
+                            .SetGroupName("Network")
+                            .AddConstructor<SimbricksTag>();
+    return tid;
+}
+
+TypeId
+SimbricksTag::GetInstanceTypeId() const
+{
+    return GetTypeId();
+}
+
+uint32_t
+SimbricksTag::GetSerializedSize() const
+{
+    return 8 + 8 + 2;
+}
+
+void
+SimbricksTag::Serialize(TagBuffer i) const
+{
+    uint8_t mac[6];
+    m_src.CopyTo(mac);
+    i.Write(mac, 6);
+    m_dst.CopyTo(mac);
+    i.Write(mac, 6);
+    i.WriteU16(m_protocolNumber);
+}
+
+void
+SimbricksTag::Deserialize(TagBuffer i)
+{
+    uint8_t mac[6];
+    i.Read(mac, 6);
+    m_src.CopyFrom(mac);
+    i.Read(mac, 6);
+    m_dst.CopyFrom(mac);
+    m_protocolNumber = i.ReadU16();
+}
+
+void
+SimbricksTag::SetSrc(Mac48Address src)
+{
+    m_src = src;
+}
+
+Mac48Address
+SimbricksTag::GetSrc() const
+{
+    return m_src;
+}
+
+void
+SimbricksTag::SetDst(Mac48Address dst)
+{
+    m_dst = dst;
+}
+
+Mac48Address
+SimbricksTag::GetDst() const
+{
+    return m_dst;
+}
+
+void
+SimbricksTag::SetProto(uint16_t proto)
+{
+    m_protocolNumber = proto;
+}
+
+uint16_t
+SimbricksTag::GetProto() const
+{
+    return m_protocolNumber;
+}
+
+void
+SimbricksTag::Print(std::ostream& os) const
+{
+    os << "src=" << m_src << " dst=" << m_dst << " proto=" << m_protocolNumber;
+}
 
 /**
  * \brief Get the type ID.
@@ -94,6 +243,24 @@ TypeId SimbricksNetDevice::GetTypeId ()
                    MakeBooleanAccessor (
                       &SimbricksNetDevice::m_a_reschedule_sync),
                    MakeBooleanChecker ())
+    .AddAttribute("DataRate",
+                  "The default data rate for point to point links. Zero means infinite",
+                  DataRateValue(DataRate("0b/s")),
+                  MakeDataRateAccessor(&SimbricksNetDevice::m_bps),
+                  MakeDataRateChecker())
+    .AddAttribute("TxQueue",
+                  "A queue to use as the transmit queue in the device.",
+                  PointerValue(nullptr),
+                  MakePointerAccessor(&SimbricksNetDevice::m_queue),
+                  MakePointerChecker<Queue<Packet>>())
+    .AddTraceSource ("Send",
+                     "Packet is send.",
+                     MakeTraceSourceAccessor (&SimbricksNetDevice::m_sendTrace),
+                     "ns3::Packet::TracedCallback")
+    .AddTraceSource ("DropSend",
+                     "Packet is dropped since queue is full.",
+                     MakeTraceSourceAccessor (&SimbricksNetDevice::m_dropSend),
+                     "ns3::Packet::TracedCallback")
     ;
     return tid;
 }
@@ -136,6 +303,26 @@ void SimbricksNetDevice::Stop ()
   NS_LOG_FUNCTION (this);
 
   m_adapter.Stop ();
+}
+
+Ptr<Queue<Packet>>
+SimbricksNetDevice::GetQueue() const
+{
+  NS_LOG_FUNCTION(this);
+  return m_queue;
+}
+
+void
+SimbricksNetDevice::SetQueue(Ptr<Queue<Packet>> q)
+{
+  NS_LOG_FUNCTION(this << q);
+  m_queue = q;
+}
+
+DataRate
+SimbricksNetDevice::GetDataRate() const
+{
+  return m_bps;
 }
 
 void SimbricksNetDevice::SetIfIndex (const uint32_t index)
@@ -248,10 +435,82 @@ bool SimbricksNetDevice::SendFrom (Ptr<Packet> packet, const Address& source, co
       return false;
   }
 
+  Mac48Address from = Mac48Address::ConvertFrom (source);
+  Mac48Address to = Mac48Address::ConvertFrom (dest);
+
+  SimbricksTag tag;
+  tag.SetSrc(from);
+  tag.SetDst(to);
+  tag.SetProto(protocolNumber);
+
+  packet->AddPacketTag(tag);
+
+  if (m_queue)
+  {
+    if (m_queue->Enqueue(packet))
+    {
+      if (m_queue->GetNPackets() == 1 && !FinishTransmissionEvent.IsRunning())
+      {
+        StartTransmission();
+      }
+      return true;
+    }
+    else
+    {
+      m_dropSend(packet, to, from, GetNode()->GetId());
+      return false;
+    }
+  }
+  else
+  {
+    Time txTime = Time(0);
+    if (m_bps > DataRate(0))
+    {
+      txTime = m_bps.CalculateBytesTxTime(packet->GetSize());
+    }
+    FinishTransmissionEvent =
+      Simulator::Schedule(txTime, &SimbricksNetDevice::FinishTransmission, this, packet);
+  }
+
+  return true;
+}
+
+void
+SimbricksNetDevice::StartTransmission()
+{
+  if (m_queue->GetNPackets() == 0)
+  {
+    return;
+  }
+  NS_ASSERT_MSG(!FinishTransmissionEvent.IsRunning(),
+                "Tried to transmit a packet while another transmission was in progress");
+  Ptr<Packet> packet = m_queue->Dequeue();
+
+  Time txTime = Time(0);
+  if (m_bps > DataRate(0))
+  {
+    txTime = m_bps.CalculateBytesTxTime(packet->GetSize());
+  }
+  FinishTransmissionEvent =
+    Simulator::Schedule(txTime, &SimbricksNetDevice::FinishTransmission, this, packet);
+}
+
+void
+SimbricksNetDevice::FinishTransmission(Ptr<Packet> packet)
+{
+  NS_LOG_FUNCTION(this);
+
+  SimbricksTag tag;
+  packet->RemovePacketTag(tag);
+
+  Mac48Address src = tag.GetSrc();
+  Mac48Address dst = tag.GetDst();
+  uint16_t proto = tag.GetProto();
+
   EthernetHeader header (false);
-  header.SetSource (Mac48Address::ConvertFrom (source));
-  header.SetDestination (Mac48Address::ConvertFrom (dest));
-  header.SetLengthType (protocolNumber);
+  header.SetSource (src);
+  header.SetDestination (dst);
+  header.SetLengthType (proto);
 
   packet->AddHeader (header);
 
@@ -263,7 +522,10 @@ bool SimbricksNetDevice::SendFrom (Ptr<Packet> packet, const Address& source, co
 
   m_adapter.outSend(msg_to, SIMBRICKS_PROTO_NET_MSG_PACKET);
 
-  return true;
+  if (m_queue)
+  {
+    StartTransmission();
+  }
 }
 
 Ptr<Node> SimbricksNetDevice::GetNode () const

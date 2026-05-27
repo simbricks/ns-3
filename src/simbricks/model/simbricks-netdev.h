@@ -26,8 +26,11 @@
 #ifndef SIMBRICKS_H
 #define SIMBRICKS_H
 
+#include "ns3/data-rate.h"
 #include "ns3/net-device.h"
 #include "ns3/nstime.h"
+#include "ns3/queue-fwd.h"
+#include "ns3/traced-callback.h"
 #include "simbricks-base.h"
 
 namespace ns3 {
@@ -51,6 +54,22 @@ public:
 
   void Start ();
   void Stop ();
+
+  /**
+   * Attach a queue to the SimpleNetDevice.
+   *
+   * \param queue Ptr to the new queue.
+   */
+  void SetQueue(Ptr<Queue<Packet>> queue);
+
+  /**
+   * Get a copy of the attached Queue.
+   *
+   * \returns Ptr to the queue.
+   */
+  Ptr<Queue<Packet>> GetQueue() const;
+
+  DataRate GetDataRate() const;
 
   void SetIfIndex (const uint32_t index) override;
   uint32_t GetIfIndex () const override;
@@ -110,6 +129,8 @@ private:
   bool m_a_listen;
   bool m_a_reschedule_sync;
 
+  TracedCallback<Ptr<const Packet>, const Mac48Address&, const Mac48Address&> m_sendTrace;
+  TracedCallback<Ptr<const Packet>, const Mac48Address&, const Mac48Address&, int> m_dropSend;
 
   uint16_t m_mtu;
   uint32_t m_ifIndex;
@@ -118,6 +139,25 @@ private:
   Ptr<Node> m_node;
   NetDevice::ReceiveCallback m_rxCallback;
   NetDevice::PromiscReceiveCallback m_promiscRxCallback;
+
+  /**
+   * The StartTransmission method is used internally to start the process
+   * of sending a packet out on the channel, by scheduling the
+   * FinishTransmission method at a time corresponding to the transmission
+   * delay of the packet.
+   */
+  void StartTransmission();
+
+  /**
+   * The FinishTransmission method is used internally to finish the process
+   * of sending a packet out on the channel.
+   * \param packet The packet to send on the channel
+   */
+  void FinishTransmission(Ptr<Packet> packet);
+
+  Ptr<Queue<Packet>> m_queue;      //!< The Queue for outgoing packets.
+  DataRate m_bps;                  //!< The device nominal Data rate. Zero means infinite
+  EventId FinishTransmissionEvent; //!< the Tx Complete event
 
   bool terminated;
 
