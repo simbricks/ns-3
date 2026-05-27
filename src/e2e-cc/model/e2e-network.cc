@@ -26,6 +26,7 @@
 #include "e2e-network.h"
 
 #include "ns3/integer.h"
+#include "ns3/queue.h"
 #include "ns3/simbricks-netdev.h"
 
 namespace ns3
@@ -71,6 +72,8 @@ E2ENetworkSimbricks::E2ENetworkSimbricks(const E2EConfig& config)
     : E2ENetwork(config)
 {
     Ptr<simbricks::SimbricksNetDevice> netDevice = CreateObject<simbricks::SimbricksNetDevice>();
+
+    auto categories {config.ParseCategories()};
     if (not config.SetAttrIfContained<StringValue, std::string>(netDevice,
                                                                 "UnixSocket",
                                                                 "UnixSocket"))
@@ -83,6 +86,20 @@ E2ENetworkSimbricks::E2ENetworkSimbricks(const E2EConfig& config)
     config.SetAttrIfContained<IntegerValue, int>(netDevice, "Sync", "Sync");
     config.SetAttrIfContained<StringValue, std::string>(netDevice, "Listen", "Listen");
     config.SetAttrIfContained<StringValue, std::string>(netDevice, "ShmPath", "ShmPath");
+
+    if (auto opt {config.Find("QueueType")}; opt)
+    {
+        std::string queueType = std::string(opt->value);
+        opt->processed = true;
+        ObjectFactory queueFactory(queueType);
+        if (auto it {categories.find("Queue")}; it != categories.end())
+        {
+            config.SetFactory(queueFactory, it->second);
+        }
+        Ptr<Queue<Packet>> queue = queueFactory.Create<Queue<Packet>>();
+        netDevice->SetQueue(queue);
+    }
+
     config.SetAttr(netDevice);
 
     netDevice->Start();
