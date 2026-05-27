@@ -90,6 +90,7 @@ E2ENetworkSimbricks::E2ENetworkSimbricks(const E2EConfig& config)
     if (auto opt {config.Find("QueueType")}; opt)
     {
         std::string queueType = std::string(opt->value);
+        QueueBase::AppendItemTypeIfNotPresent(queueType, "Packet");
         opt->processed = true;
         ObjectFactory queueFactory(queueType);
         if (auto it {categories.find("Queue")}; it != categories.end())
