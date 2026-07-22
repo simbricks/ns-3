@@ -1,10 +1,7 @@
-set(simbricks_path $ENV{SIMBRICKS_PATH})
-
-include_directories(${simbricks_path}/lib)
 link_libraries(
-  ${simbricks_path}/lib/simbricks/nicif/libnicif.a
-  ${simbricks_path}/lib/simbricks/network/libnetwork.a
-  ${simbricks_path}/lib/simbricks/base/libbase.a
+  libnicif.a
+  libnetwork.a
+  libbase.a
 )
 
 build_lib(

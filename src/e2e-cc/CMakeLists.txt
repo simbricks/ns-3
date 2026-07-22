@@ -3,10 +3,6 @@ if(HAVE_STDINT_H)
     add_definitions(-DHAVE_STDINT_H)
 endif()
 
-set(simbricks_path $ENV{SIMBRICKS_PATH})
-
-include_directories(${simbricks_path}/lib)
-
 build_lib(
     LIBNAME e2e-cc
     SOURCE_FILES model/e2e-config.cc
